@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gfcm_trading/constants/color_constants.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class CustomText extends StatelessWidget {
   final String? text;
@@ -31,7 +32,6 @@ class CustomText extends StatelessWidget {
     this.textStyle,
     this.textDecoration,
     this.height,
-
     this.softWrap,
   });
   ColorConstants colorConstants = ColorConstants();
@@ -43,9 +43,7 @@ class CustomText extends StatelessWidget {
       overflow: textOverflow,
       textAlign: textAlign,
       softWrap: softWrap,
-
-      style:
-          textStyle ??
+      style: textStyle ??
           GoogleFonts.outfit(
             fontSize: size,
             fontWeight: fw,

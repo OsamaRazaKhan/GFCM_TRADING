@@ -744,12 +744,12 @@ class TradeChartController extends GetxController {
   Future<void> cancelPendingOrder(PendingOrder order) async {
     order.isExecuted = true;
     try {
-      await updatePendingOrderStatus(order.orderId, "cancelled");
+      //  await updatePendingOrderStatus(order.orderId, "cancelled");
     } catch (e) {
       debugPrint("Error cancelling pending order: $e");
     }
     _removePendingOrderLocally(order);
-    await updateYourTradePositions();
+    // await updateYourTradePositions();
   }
 
   void _monitorPendingOrders() {
