@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gfcm_trading/constants/color_constants.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 
 class CustomText extends StatelessWidget {
   final String? text;

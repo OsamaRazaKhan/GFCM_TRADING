@@ -696,12 +696,50 @@ class TradeChartController extends GetxController {
     return reference;
   }
 
+  // bool _checkPendingOrderExecution({
+  //   required PendingOrder order,
+  //   required double currentBid,
+  //   required double currentAsk,
+  // }) {
+  //   final minMovement = (order.entryPrice * 0.001).clamp(0.10, double.infinity);
+  //   final referencePrice = _deriveReferencePrice(order);
+  //   final targetPrice = order.entryPrice;
+  //   final currentPrice = order.side == TradeSide.buy ? currentAsk : currentBid;
+
+  //   bool expectPriceToFall;
+  //   if (targetPrice == referencePrice) {
+  //     expectPriceToFall = currentPrice > targetPrice;
+  //   } else {
+  //     expectPriceToFall = targetPrice < referencePrice;
+  //   }
+
+  //   bool movedEnough;
+  //   bool reachedTarget;
+
+  //   if (expectPriceToFall) {
+  //     movedEnough = (referencePrice - currentPrice) >= minMovement;
+  //     reachedTarget = currentPrice <= targetPrice;
+  //   } else {
+  //     movedEnough = (currentPrice - referencePrice) >= minMovement;
+  //     reachedTarget = currentPrice >= targetPrice;
+  //   }
+
+  //   if (!order.hasPriceCrossedEntry) {
+  //     if (movedEnough && reachedTarget) {
+  //       order.hasPriceCrossedEntry = true;
+  //       return false; // wait one more cycle
+  //     }
+  //     return false; //////returns this false all the time
+  //   }
+
+  //   return reachedTarget;
+  // }
+
   bool _checkPendingOrderExecution({
     required PendingOrder order,
     required double currentBid,
     required double currentAsk,
   }) {
-    final minMovement = (order.entryPrice * 0.001).clamp(0.10, double.infinity);
     final referencePrice = _deriveReferencePrice(order);
     final targetPrice = order.entryPrice;
     final currentPrice = order.side == TradeSide.buy ? currentAsk : currentBid;
@@ -713,25 +751,28 @@ class TradeChartController extends GetxController {
       expectPriceToFall = targetPrice < referencePrice;
     }
 
-    bool movedEnough;
     bool reachedTarget;
 
+    // REACHED TARGET = price touched or exceeded entry
     if (expectPriceToFall) {
-      movedEnough = (referencePrice - currentPrice) >= minMovement;
       reachedTarget = currentPrice <= targetPrice;
     } else {
-      movedEnough = (currentPrice - referencePrice) >= minMovement;
       reachedTarget = currentPrice >= targetPrice;
     }
 
+    // FIX: Allow movement immediately when target is reached
+    bool movedEnough = true;
+
+    // PHASE 1 — Wait until price reaches/crosses entry
     if (!order.hasPriceCrossedEntry) {
       if (movedEnough && reachedTarget) {
         order.hasPriceCrossedEntry = true;
-        return false; // wait one more cycle
+        return false; // wait one more tick
       }
       return false;
     }
 
+    // PHASE 2 — Execute after crossing
     return reachedTarget;
   }
 
