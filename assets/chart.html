@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="UTF-8" />
+  <title>Live Trading Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;          /* no page scroll */
+      overscroll-behavior: none; /* no rubber band */
+      -webkit-user-select: none;
+      user-select: none;
+      /* allow pan + pinch gestures */
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+    #chart {
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+      /* allow pinch/pan on this element */
+      touch-action: pan-x pan-y pinch-zoom;
+    }
+    .tooltip {
+      position: absolute;
+      display: none;
+      padding: 4px 6px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      font-size: 12px;
+      pointer-events: none;
+      border-radius: 4px;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
+  <div id="tt" class="tooltip"></div>
+
+  <script>
+    // Prevent ctrl+wheel page zoom on desktop
+    document.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+    // Prevent default context menu on long press
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.documentElement.style.webkitTouchCallout = 'none';
+    document.documentElement.style.webkitUserSelect = 'none';
+
+    // Debug: log pointer events (remove after testing)
+    window.addEventListener('pointerdown', (e) => {
+      console.debug('pointerdown', e.pointerId, e.pointerType, e.isPrimary, e.buttons);
+    });
+    window.addEventListener('pointermove', (e) => {
+      // only log when two or more pointers are active (helpful to detect pinch)
+      if (navigator.maxTouchPoints && navigator.maxTouchPoints > 1) {
+        // cheap check: this will log a lot — use remote debugging console
+        // console.debug('pointermove', e.pointerId, e.pointerType);
+      }
+    });
+
+    const el = document.getElementById('chart');
+    const toolTip = document.getElementById('tt');
+
+    const chart = LightweightCharts.createChart(el, {
+      layout: { background: { color: '#000000' }, textColor: '#d1d4dc' },
+      grid: { vertLines: { color: '#2B2B43' }, horzLines: { color: '#363C4E' } },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      rightPriceScale: {
+        borderColor: '#485c7b',
+        scaleMargins: { top: 0.1, bottom: 0.15 },
+        mode: LightweightCharts.PriceScaleMode.Normal,
+      },
+      timeScale: {
+        borderColor: '#485c7b',
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 12,
+        fixLeftEdge: false,
+        minBarSpacing: 0.4,
+        barSpacing: 8,
+      },
+      handleScale: {
+        mouseWheel: true,
+        pinch: true,
+        axisPressedMouseMove: true,
+      },
+      handleScroll: {
+        mouseWheel: true,
+        pressedMouseMove: true,
+        horzTouchDrag: true,
+        vertTouchDrag: true,
+      },
+    });
+
+    // Main candles
+    const candleSeries = chart.addCandlestickSeries({
+      lastValueVisible: true,
+      priceLineVisible: true,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+    });
+
+  
+    // Bid/Ask spread lines
+    const bidSeries = chart.addLineSeries({
+      color: 'red',
+      lineWidth: 1,
+      lastValueVisible: true,
+      priceLineVisible: true,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+      priceScaleId: '', // overlay
+    });
+    const askSeries = chart.addLineSeries({
+      color: 'green',
+      lineWidth: 1,
+      lastValueVisible: true,
+      priceLineVisible: true,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+      priceScaleId: '', // overlay
+    });
+
+
+     
+
+    // ---- State ----
+    let data = [];
+    const smaPeriod = 20;
+    let socket = null;
+    
+    // SMA series (must be defined before functions that use it)
+    let smaSeries = chart.addLineSeries({ color: '#ff9800', lineWidth: 1.5 });
+
+    const atRightEdge = () => chart.timeScale().scrollPosition() <= 1;
+
+    // Spread updater (call from Flutter)
+    function updateSpreadLines(bid, ask) {
+      const t = data.length > 0 ? data[data.length - 1].time : Math.floor(Date.now() / 1000);
+      bidSeries.update({ time: t, value: Number(bid) });
+      askSeries.update({ time: t, value: Number(ask) });
+    }
+
+    // History loader
+    function setInitialCandles(candles) {
+      data = candles.map(c => ({
+        time: Number(c.time),
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close),
+      }));
+      candleSeries.setData(data);
+      rebuildSMA();
+      chart.timeScale().fitContent();
+    }
+
+    // Live updater
+    function updateCandle(bar) {
+      bar = {
+        time: Number(bar.time),
+        open: Number(bar.open),
+        high: Number(bar.high),
+        low: Number(bar.low),
+        close: Number(bar.close),
+      };
+
+      const follow = atRightEdge();
+      const last = data[data.length - 1];
+
+      if (last && last.time === bar.time) {
+        data[data.length - 1] = bar;
+      } else if (!last || bar.time > last.time) {
+        data.push(bar);
+      } else {
+        return;
+      }
+
+      candleSeries.update(bar);
+      updateSMAIncremental();
+
+      if (follow) chart.timeScale().scrollToRealTime();
+
+
+      //For Zoom----------------1
+        if (!window.initialZoomDone) {
+    zoomToLast(50);
+    window.initialZoomDone = true;
+      }
+    }
+
+    // SMA helpers
+    function rebuildSMA() {
+      const sma = [];
+      if (data.length >= smaPeriod) {
+        let sum = 0;
+        for (let i = 0; i < smaPeriod; i++) sum += data[i].close;
+        sma.push({ time: data[smaPeriod - 1].time, value: sum / smaPeriod });
+        for (let i = smaPeriod; i < data.length; i++) {
+          sum += data[i].close - data[i - smaPeriod].close;
+          sma.push({ time: data[i].time, value: sum / smaPeriod });
+        }
+      }
+      smaSeries.setData(sma);
+    }
+    function updateSMAIncremental() {
+      if (data.length < smaPeriod) { smaSeries.setData([]); return; }
+      let sum = 0;
+      for (let i = data.length - smaPeriod; i < data.length; i++) sum += data[i].close;
+      smaSeries.update({ time: data[data.length - 1].time, value: sum / smaPeriod });
+    }
+
+    // Optional JS-side stream
+    function startKlines(symbol, interval) {
+      if (socket) { try { socket.close(); } catch(_) {} }
+      const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_${interval}`;
+      socket = new WebSocket(url);
+      socket.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (!msg.k) return;
+          const k = msg.k;
+          updateCandle({
+            time: Math.floor(k.t / 1000),
+            open: parseFloat(k.o),
+            high: parseFloat(k.h),
+            low: parseFloat(k.l),
+            close: parseFloat(k.c),
+          });
+        } catch(_) {}
+      };
+    }
+
+    // Crosshair tooltip
+    chart.subscribeCrosshairMove(param => {
+      if (!param || !param.point || !param.time) { toolTip.style.display = 'none'; return; }
+      const ohlc = param.seriesData.get(candleSeries);
+      if (!ohlc) { toolTip.style.display = 'none'; return; }
+      const { open, high, low, close } = ohlc;
+      toolTip.style.display = 'block';
+      toolTip.innerText = `O ${open?.toFixed?.(2)}  H ${high?.toFixed?.(2)}  L ${low?.toFixed?.(2)}  C ${close?.toFixed?.(2)}`;
+      toolTip.style.left = (param.point.x + 12) + 'px';
+      toolTip.style.top  = (param.point.y + 12) + 'px';
+    });
+
+    function fitChart() {
+  if (chart) {
+    chart.timeScale().fitContent();
+  }
+  }
+
+//For Zoom----------------2
+    function zoomToLast(count) {
+    if (chart) {
+      try {
+        const barsInfo = candleSeries.barsInLogicalRange(chart.timeScale().getVisibleLogicalRange());
+        const totalBars = barsInfo ? barsInfo.barsBefore + barsInfo.barsAfter + barsInfo.barsCount : 0;
+        // CRITICAL: Ensure from < to and both are valid
+        if (totalBars <= 0) return; // No data, skip zoom
+        const from = Math.max(0, totalBars - count);
+        const to = totalBars;
+        if (from >= to) return; // Invalid range, skip
+        chart.timeScale().setVisibleLogicalRange({ from: from, to: to });
+      } catch(e) { 
+        console.error('zoomToLast error', e); 
+      }
+    } 
+    }
+
+    // --- Trade Lines Handling ---
+let tradeLines = {}; // {tradeId: lineSeries}
+
+function updateTradeLines(trades) {
+  // trades = [{tradeid, side, entryPrice, lots}]
+  // Remove existing lines
+  Object.values(tradeLines).forEach(line => chart.removeSeries(line));
+  tradeLines = {};
+
+  if (!Array.isArray(trades)) return;
+
+ 
+  for (const t of trades) {
+    const color = t.side === 'buy' ? '#00FF00' : '#FF0000';
+    const line = chart.addLineSeries({
+      color: color,
+      lineWidth: 2,
+      priceLineVisible: true,
+      lastValueVisible: true,
+      title: `${t.side.toUpperCase()} ${t.lots}`,
+      priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+    });
+    const lastTime = data.length > 0 ? data[data.length - 1].time : Math.floor(Date.now() / 1000);
+    line.setData([{ time: lastTime, value: Number(t.entryPrice) }]);
+    tradeLines[t.tradeid] = line;
+  }
+
+
+}
+
+ 
+
+    // Theme switch
+    function changeTheme(theme) {
+      chart.applyOptions({
+        layout: {
+          background: { color: theme === 'dark' ? '#000000' : '#FFFFFF' },
+          textColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+        },
+        grid: {
+          vertLines: { color: theme === 'dark' ? '#2B2B43' : '#E6E6E6' },
+          horzLines: { color: theme === 'dark' ? '#363C4E' : '#E6E6E6' },
+        },
+      });
+    }
+
+    // Expose to Flutter
+    window.setInitialCandles = setInitialCandles;
+    window.startKlines = startKlines;
+    window.updateCandle = updateCandle;
+    window.updateSpreadLines = updateSpreadLines;
+    window.changeTheme = changeTheme;
+    
+    window.updateTradeLines = updateTradeLines;
+
+    // Resize to WebView 
+    new ResizeObserver(() => chart.resize(el.clientWidth, el.clientHeight)).observe(el);
+  </script>
+</body>
+</html>
+
+
+
+
+
+ 
+ <!-- <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Live Trading Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    html, body { margin:0; padding:0; height:100%; width:100%; background:#000; overflow:hidden; -webkit-user-select:none; user-select:none; touch-action:pan-x pan-y pinch-zoom; }
+    #chart { height:100vh; width:100vw; position:relative; touch-action:pan-x pan-y pinch-zoom; }
+    .tooltip { position:absolute; display:none; padding:4px 6px; background:rgba(0,0,0,0.85); color:#fff; font-size:12px; pointer-events:none; border-radius:4px; z-index:1000; white-space:nowrap; }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
+  <div id="tt" class="tooltip"></div>
+
+<script>
+/* -----------------------------
+   Lightweight Charts Setup
+   ----------------------------- */
+const rootEl = document.getElementById('chart');
+let chart = LightweightCharts.createChart(rootEl, {
+  layout: { background: { color: '#000000' }, textColor: '#d1d4dc' },
+  grid: { vertLines: { color: '#2B2B43' }, horzLines: { color: '#363C4E' } },
+  crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+  rightPriceScale: { borderColor: '#485c7b', scaleMargins: { top: 0.1, bottom: 0.15 } },
+  timeScale: { borderColor: '#485c7b', timeVisible: true, rightOffset: 12, minBarSpacing: 0.4, barSpacing: 8 },
+});
+
+const candleSeries = chart.addCandlestickSeries({
+  lastValueVisible: true,
+  priceLineVisible: true,
+  priceFormat: { type: 'price', precision: 2, minMove: 0.01 },
+});
+
+const bidSeries = chart.addLineSeries({ color: 'red', lineWidth: 1, priceFormat: { type: 'price', precision: 2, minMove: 0.01 }, priceScaleId: '' });
+const askSeries = chart.addLineSeries({ color: 'green', lineWidth: 1, priceFormat: { type: 'price', precision: 2, minMove: 0.01 }, priceScaleId: '' });
+
+let data = [];
+const smaPeriod = 20;
+let smaSeries = chart.addLineSeries({ color: '#ff9800', lineWidth: 1.5 });
+let socketKline = null;
+let socketTicker = null;
+let tradeLines = {}; // store arrays by tradeId -> {entry:obj, sl:obj, tp:obj}
+
+/* -----------------------------
+   Utility / Helpers
+   ----------------------------- */
+const atRightEdge = () => chart.timeScale().scrollPosition() <= 1;
+
+function rebuildSMA(){
+  const sma = [];
+  if (data.length >= smaPeriod) {
+    let sum = 0;
+    for (let i = 0; i < smaPeriod; i++) sum += data[i].close;
+    sma.push({ time: data[smaPeriod - 1].time, value: sum / smaPeriod });
+    for (let i = smaPeriod; i < data.length; i++) {
+      sum += data[i].close - data[i - smaPeriod].close;
+      sma.push({ time: data[i].time, value: sum / smaPeriod });
+    }
+  }
+  smaSeries.setData(sma);
+}
+
+function updateSMAIncremental(){
+  if (data.length < smaPeriod) { smaSeries.setData([]); return; }
+  let sum = 0;
+  for (let i = data.length - smaPeriod; i < data.length; i++) sum += data[i].close;
+  smaSeries.update({ time: data[data.length - 1].time, value: sum / smaPeriod });
+}
+
+/* -----------------------------
+   Exposed functions to Flutter
+   ----------------------------- */
+
+// set initial candles from Flutter (array of {time,open,high,low,close})
+function setInitialCandles(candles) {
+  try {
+    data = candles.map(c => ({ time: Number(c.time), open: Number(c.open), high: Number(c.high), low: Number(c.low), close: Number(c.close) }));
+    candleSeries.setData(data);
+    rebuildSMA();
+    chart.timeScale().fitContent();
+    // keep initialZoomDone false so zoomToLast can be called later
+    window.initialZoomDone = false;
+    console.log('setInitialCandles: loaded', data.length);
+  } catch (e) {
+    console.error('setInitialCandles error', e);
+  }
+}
+
+// update a single incoming candle from Flutter
+function updateCandle(bar) {
+  try {
+    bar = { time: Number(bar.time), open: Number(bar.open), high: Number(bar.high), low: Number(bar.low), close: Number(bar.close) };
+    const follow = atRightEdge();
+    const last = data.length ? data[data.length - 1] : null;
+
+    if (last && last.time === bar.time) {
+      data[data.length - 1] = bar;
+      candleSeries.update(bar);
+    } else if (!last || bar.time > last.time) {
+      data.push(bar);
+      candleSeries.update(bar);
+    } else {
+      return;
+    }
+
+    updateSMAIncremental();
+    if (follow) chart.timeScale().scrollToRealTime();
+
+    if (!window.initialZoomDone) {
+      zoomToLast(50);
+      window.initialZoomDone = true;
+    }
+  } catch(e) { console.error('updateCandle error', e); }
+}
+
+// update bid/ask overlay lines
+function updateSpreadLines(bid, ask) {
+  try {
+    const t = data.length > 0 ? data[data.length - 1].time : Math.floor(Date.now() / 1000);
+    bidSeries.update({ time: t, value: Number(bid) });
+    askSeries.update({ time: t, value: Number(ask) });
+  } catch(e) { console.error('updateSpreadLines error', e); }
+}
+
+function fitChart(){ if (chart) chart.timeScale().fitContent(); }
+
+// set visible logical range to last `count` bars
+function zoomToLast(count) {
+  try {
+    const range = chart.timeScale().getVisibleLogicalRange();
+    const barsInfo = candleSeries.barsInLogicalRange(range);
+    const totalBars = barsInfo ? barsInfo.barsBefore + barsInfo.barsAfter + barsInfo.barsCount : 0;
+    // CRITICAL: Ensure from < to and both are valid
+    if (totalBars <= 0) return; // No data, skip zoom
+    const from = Math.max(0, totalBars - count);
+    const to = totalBars;
+    if (from >= to) return; // Invalid range, skip
+    chart.timeScale().setVisibleLogicalRange({ from: from, to: to });
+  } catch(e) { console.error('zoomToLast error', e); }
+}
+
+function changeTheme(theme) {
+  chart.applyOptions({
+    layout: { background: { color: theme === 'dark' ? '#000000' : '#FFFFFF' }, textColor: theme === 'dark' ? '#FFFFFF' : '#000000' },
+    grid: { vertLines: { color: theme === 'dark' ? '#2B2B43' : '#E6E6E6' }, horzLines: { color: theme === 'dark' ? '#363C4E' : '#E6E6E6' } },
+  });
+}
+
+/* -----------------------------
+   Trade lines: entry / sl / tp
+   uses createPriceLine on candleSeries which returns a reference
+   ----------------------------- */
+function drawTradeLines(trade) {
+  // trade: { id, entry, sl, tp, side }  side = 'buy' | 'sell'
+  if (!trade || !trade.id) return;
+  try {
+    // clear existing lines for that trade id
+    removeTradeLines(trade.id);
+
+    const color = (trade.side === 'buy') ? '#00ff00' : '#ff3838';
+    const entryLine = candleSeries.createPriceLine({
+      price: Number(trade.entry),
+      color: color,
+      lineWidth: 2,
+      lineStyle: LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true,
+      title: trade.side === 'buy' ? 'BUY' : 'SELL'
+    });
+
+    let tpLine = null;
+    let slLine = null;
+    if (trade.tp != null) {
+      tpLine = candleSeries.createPriceLine({
+        price: Number(trade.tp),
+        color: '#00b050',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'TP'
+      });
+    }
+    if (trade.sl != null) {
+      slLine = candleSeries.createPriceLine({
+        price: Number(trade.sl),
+        color: '#ff0000',
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: 'SL'
+      });
+    }
+
+    tradeLines[trade.id] = { entry: entryLine, tp: tpLine, sl: slLine };
+    console.log('drawTradeLines', trade.id, tradeLines[trade.id]);
+  } catch(e) {
+    console.error('drawTradeLines error', e);
+  }
+}
+
+function removeTradeLines(tradeId) {
+  try {
+    const obj = tradeLines[tradeId];
+    if (!obj) return;
+    if (obj.entry && obj.entry.remove) obj.entry.remove();
+    if (obj.tp && obj.tp.remove) obj.tp.remove();
+    if (obj.sl && obj.sl.remove) obj.sl.remove();
+    delete tradeLines[tradeId];
+    console.log('removeTradeLines', tradeId);
+  } catch(e) { console.error('removeTradeLines error', e); }
+}
+
+/* -----------------------------
+   JS handler for Flutter -> call readiness
+   ----------------------------- */
+function notifyReadyToFlutter() {
+  if (window.flutter_inappwebview && window.flutter_inappwebview.callHandler) {
+    try {
+      window.flutter_inappwebview.callHandler('chartReady', { ready: true });
+    } catch(e) { console.error('notifyReady error', e); }
+  }
+}
+
+/* -----------------------------
+   Resize observer to keep chart sized
+   ----------------------------- */
+new ResizeObserver(() => chart.resize(rootEl.clientWidth, rootEl.clientHeight)).observe(rootEl);
+
+/* -----------------------------
+   Expose functions to window
+   ----------------------------- */
+window.setInitialCandles = setInitialCandles;
+window.updateCandle = updateCandle;
+window.updateSpreadLines = updateSpreadLines;
+window.fitChart = fitChart;
+window.zoomToLast = zoomToLast;
+window.changeTheme = changeTheme;
+window.drawTradeLines = drawTradeLines;
+window.removeTradeLines = removeTradeLines;
+window.notifyReadyToFlutter = notifyReadyToFlutter;
+
+/* -----------------------------
+   Call notify on next tick so Flutter can know chart instance ready
+   ----------------------------- */
+setTimeout(() => {
+  console.log('chart.html: initialization complete - notifying Flutter');
+  notifyReadyToFlutter();
+}, 50);
+
+</script>
+</body>
+</html>
+ -->
+
+
+ 
+
+
+  

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.gfcmTrading.trade",
+      "sha256_cert_fingerprints": [
+        "B3:75:C0:7A:B2:A7:1F:68:D9:34:EC:E2:6D:3A:D2:6A:91:44:A3:3F:56:AA:84:39:13:10:7F:F8:81:70:EB:79"
+      ]
+    }
+  }
+]

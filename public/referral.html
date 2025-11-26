@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Referral Link</title>
+  <script>
+    function openApp() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("ref") || "";
+
+      // Detect platform
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = ua.indexOf("android") > -1;
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+
+      if (isAndroid) {
+        // Android intent link (deep link + fallback)
+        const intentUrl =
+          'intent://gfcmtrading.web.app/referral?ref=' + encodeURIComponent(code) +
+          '#Intent;scheme=https;package=com.gfcmTrading.trade;' +
+          'S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.gfcmTrading.trade;end';
+        window.location.replace(intentUrl);
+      } 
+      else if (isIOS) {
+        // Try to open your iOS app via Universal Link (if configured)
+        const appLink = 'yourappscheme://referral?ref=' + encodeURIComponent(code);
+
+        // Try opening app
+        window.location = appLink;
+
+        // Fallback after 2 seconds to App Store
+        setTimeout(() => {
+          window.location = 'https://apps.apple.com/app/1228277273';
+        }, 2000);
+      } 
+      else {
+        // Desktop or unsupported device
+        document.body.innerHTML = "<h3>Please open this link on your mobile device.</h3>";
+      }
+
+      // Safety message
+      setTimeout(() => {
+        document.body.innerHTML = "<h3>If you are not redirected, please open the Play Store or App Store manually.</h3>";
+      }, 4000);
+    }
+  </script>
+</head>
+<body onload="openApp()">
+  <h2>Opening App...</h2>
+</body>
+</html>
+ 
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Referral Link</title>
+  <script>
+    function openApp() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("ref") || "";
+
+      const schemeLink = "gfcmtrade://referral?ref=" + encodeURIComponent(code);
+      const playStoreLink = "https://play.google.com/store/apps/details?id=com.gfcmTrading.trade";
+      const appStoreLink = "https://apps.apple.com/app/1228277273";
+
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = ua.includes("android");
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+
+      if (isAndroid) {
+        window.location.href = schemeLink;
+        setTimeout(() => window.location.href = playStoreLink, 1500);
+      } 
+      else if (isIOS) {
+        window.location.href = schemeLink;
+        setTimeout(() => window.location.href = appStoreLink, 2000);
+      } 
+      else {
+        document.body.innerHTML = "<h3>Please open this link on your mobile device.</h3>";
+      }
+    }
+  </script>
+</head>
+<body onload="openApp()">
+  <h2>Opening App...</h2>
+</body>
+</html> -->
+
+
+
+ 
