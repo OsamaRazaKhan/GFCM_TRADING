@@ -41,8 +41,9 @@ class TradeChartController extends GetxController {
   Timer? _positionsPollTimer; // Timer for polling backend/admin-added trades
   Timer? _fetchDebounceTimer; // Debounce timer for API fetches
   bool _isFetchingPositions = false; // Flag to prevent concurrent fetches
-  bool _isFetchingConfirmed = false; // Flag to prevent concurrent confirmed fetches
-  
+  bool _isFetchingConfirmed =
+      false; // Flag to prevent concurrent confirmed fetches
+
   // Track closed trade IDs to prevent them from being re-added by API refresh
   final Set<String> _closedTradeIds = <String>{};
 
@@ -91,11 +92,11 @@ class TradeChartController extends GetxController {
   // ===== Positions =====
   final RxList<Position> positions = <Position>[].obs;
   final RxList<CloseTradesModel> closeTradeList = <CloseTradesModel>[].obs;
-  
+
   // ===== Confirmed trades from API =====
   final RxList<CloseTradesModel> confirmedTrades = <CloseTradesModel>[].obs;
   final RxBool isLoadingConfirmedTrades = false.obs;
-  
+
   // ===== Pending Orders (SL/TP orders waiting to be executed) =====
   final RxList<PendingOrder> pendingOrders = <PendingOrder>[].obs;
 
@@ -151,31 +152,31 @@ class TradeChartController extends GetxController {
   Future<void> loadSelectedMode() async {
     SharedPreferences sp = await SharedPreferences.getInstance();
     final newMode = sp.getString("selectedMode") ?? "Real";
-    
+
     // If mode changed, clear all data first
     if (selectedMode.value != newMode) {
       // Clear all positions
       positions.clear();
-      
+
       // Clear pending orders
       pendingOrders.clear();
-      
+
       // Clear closed trade IDs tracking
       _closedTradeIds.clear();
-      
+
       // CRITICAL: Clear executing orders set on account switch
       _executingOrderIds.clear();
       _pendingOrderReferencePrices.clear();
-      
+
       // Clear confirmed trades
       confirmedTrades.clear();
-      
+
       // Clear close trade list
       closeTradeList.clear();
-      
+
       // Stop polling temporarily
       _stopPositionsPolling();
-      
+
       // Reset account metrics
       balance.value = 0.0;
       equity.value = 0.0;
@@ -183,10 +184,10 @@ class TradeChartController extends GetxController {
       freeMargin.value = 0.0;
       credit.value = 0.0;
     }
-    
+
     // Update mode
     selectedMode.value = newMode;
-    
+
     // Reload data for the new mode
     getYourBalance(isFirstLoad: true);
     getYourTradePositions(); // Fetch only active trades from chart/API
@@ -582,7 +583,8 @@ class TradeChartController extends GetxController {
       }
 
       // Get current market price at creation time
-      double priceAtCreation = (side == TradeSide.buy) ? askPrice.value : bidPrice.value;
+      double priceAtCreation =
+          (side == TradeSide.buy) ? askPrice.value : bidPrice.value;
       if (priceAtCreation <= 0) {
         // Fallback to last price, then entry price
         final fallbackPrice = (side == TradeSide.buy)
@@ -590,10 +592,12 @@ class TradeChartController extends GetxController {
             : (lastPrice.value > 0 ? lastPrice.value : entryPrice);
         priceAtCreation = fallbackPrice;
       }
-      
+
       // Validate that EP is different from current price (limit orders must wait)
-      if ((side == TradeSide.buy && (entryPrice - priceAtCreation).abs() < 0.01) ||
-          (side == TradeSide.sell && (entryPrice - priceAtCreation).abs() < 0.01)) {
+      if ((side == TradeSide.buy &&
+              (entryPrice - priceAtCreation).abs() < 0.01) ||
+          (side == TradeSide.sell &&
+              (entryPrice - priceAtCreation).abs() < 0.01)) {
         FlushMessages.commonToast(
           "Entry price must be different from current market price for limit orders",
           backGroundColor: colorConstants.dimGrayColor,
@@ -614,33 +618,38 @@ class TradeChartController extends GetxController {
         contractSize: kGoldContractSizePerLot,
         marginUsed: req,
         priceAtCreation: priceAtCreation,
-        hasPriceCrossedEntry: false, // Always start as false - price must cross entry first
+        hasPriceCrossedEntry:
+            false, // Always start as false - price must cross entry first
       );
 
       pendingOrders.add(order);
       // CRITICAL: Clear cache to force rebuild of allTradeItems
       _cachedAllTradeItems = null;
       _pendingOrderReferencePrices[order.orderId] = priceAtCreation;
-      
+
       // Save pending order to backend immediately
-      await _savePendingOrderToBackend(order);
-      
+      // await _savePendingOrderToBackend(order);
+
       // Show appropriate message based on order type
       String orderType = "";
       if (side == TradeSide.buy) {
         if (entryPrice < priceAtCreation) {
-          orderType = "BUY limit (waiting for price to fall to ${entryPrice.toStringAsFixed(2)})";
+          orderType =
+              "BUY limit (waiting for price to fall to ${entryPrice.toStringAsFixed(2)})";
         } else {
-          orderType = "BUY stop-limit (waiting for price to rise to ${entryPrice.toStringAsFixed(2)})";
+          orderType =
+              "BUY stop-limit (waiting for price to rise to ${entryPrice.toStringAsFixed(2)})";
         }
       } else {
         if (entryPrice > priceAtCreation) {
-          orderType = "SELL limit (waiting for price to rise to ${entryPrice.toStringAsFixed(2)})";
+          orderType =
+              "SELL limit (waiting for price to rise to ${entryPrice.toStringAsFixed(2)})";
         } else {
-          orderType = "SELL stop-limit (waiting for price to fall to ${entryPrice.toStringAsFixed(2)})";
+          orderType =
+              "SELL stop-limit (waiting for price to fall to ${entryPrice.toStringAsFixed(2)})";
         }
       }
-      
+
       FlushMessages.commonToast(
         "Limit order placed: $orderType",
         backGroundColor: colorConstants.secondaryColor,
@@ -651,7 +660,7 @@ class TradeChartController extends GetxController {
 
       // Save pending order to backend immediately (Real accounts only)
       if (selectedMode.value == "Real") {
-        await _savePendingOrderToBackend(order);
+        // await _savePendingOrderToBackend(order);
       }
     } catch (e) {
       debugPrint("Error creating pending order: $e");
@@ -673,7 +682,8 @@ class TradeChartController extends GetxController {
       reference = _pendingOrderReferencePrices[order.orderId] ?? 0.0;
     }
     if (reference <= 0) {
-      final livePrice = order.side == TradeSide.buy ? askPrice.value : bidPrice.value;
+      final livePrice =
+          order.side == TradeSide.buy ? askPrice.value : bidPrice.value;
       if (livePrice > 0) {
         reference = livePrice;
       } else if (lastPrice.value > 0) {
@@ -741,27 +751,28 @@ class TradeChartController extends GetxController {
     _removePendingOrderLocally(order);
     await updateYourTradePositions();
   }
-  
+
   void _monitorPendingOrders() {
     // Cancel existing timer if any
     _pendingOrdersMonitorTimer?.cancel();
-    
+
     // Monitor every 500ms for price hits
-    _pendingOrdersMonitorTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+    _pendingOrdersMonitorTimer =
+        Timer.periodic(const Duration(milliseconds: 500), (timer) {
       if (!isConnectedToInterNet.value || pendingOrders.isEmpty) {
         return;
       }
 
       final currentBid = bidPrice.value;
       final currentAsk = askPrice.value;
-      
+
       if (currentBid <= 0 || currentAsk <= 0) {
         return; // Wait for valid prices
       }
 
       // Check each pending order
       final ordersToExecute = <PendingOrder>[];
-      
+
       for (final order in pendingOrders) {
         if (order.isExecuted) continue;
 
@@ -792,22 +803,22 @@ class TradeChartController extends GetxController {
       debugPrint("Order ${order.orderId} is already being executed, skipping");
       return;
     }
-    
+
     try {
       // Mark as executing to prevent duplicates
       _executingOrderIds.add(order.orderId);
-      
+
       // CRITICAL: Mark order as executed FIRST before any other operations
       order.isExecuted = true;
       order.executedAt = DateTime.now();
-      
+
       // Get actual execution price (current market price when limit is hit)
-      final executionPrice = (order.side == TradeSide.buy) 
-          ? askPrice.value 
-          : bidPrice.value;
+      final executionPrice =
+          (order.side == TradeSide.buy) ? askPrice.value : bidPrice.value;
 
       if (executionPrice <= 0) {
-        debugPrint("Error: Invalid execution price when executing pending order");
+        debugPrint(
+            "Error: Invalid execution price when executing pending order");
         // Revert execution flag
         order.isExecuted = false;
         return;
@@ -826,7 +837,8 @@ class TradeChartController extends GetxController {
         userid: userId,
         side: order.side,
         lots: order.lots,
-        entryPrice: executionPrice, // Use actual execution price, not limit price
+        entryPrice:
+            executionPrice, // Use actual execution price, not limit price
         contractSize: order.contractSize,
         marginUsed: order.marginUsed,
         openedAt: DateTime.now(),
@@ -843,7 +855,8 @@ class TradeChartController extends GetxController {
         await _recalcUsedMargin();
         _recalcAccount();
       } else {
-        debugPrint("Position ${pos.tradeid} already exists, skipping duplicate");
+        debugPrint(
+            "Position ${pos.tradeid} already exists, skipping duplicate");
       }
 
       // Update backend: remove pending status and mark as executed (async, don't wait)
@@ -860,10 +873,10 @@ class TradeChartController extends GetxController {
       await updateYourTradePositions(); // Sync positions with server
       await updateYourBalance(); // Update balance/margin on server
       await getYourBalance(); // Fetch fresh balance
-      
+
       // Schedule server sync for additional updates
       _scheduleServerSync();
-      
+
       // Debounced refresh
       _fetchDebounceTimer?.cancel();
       _fetchDebounceTimer = Timer(const Duration(milliseconds: 1000), () {
@@ -1023,14 +1036,14 @@ class TradeChartController extends GetxController {
     if (bidPrice.value <= 0 || askPrice.value <= 0 || positions.isEmpty) {
       return;
     }
-    
+
     // CRITICAL: Only check active positions, never pending orders
     for (var p in positions.toList()) {
       // Skip if this trade was already triggered (prevents double-closing)
       if (_triggeredTrades.contains(p.tradeid)) {
         continue;
       }
-      
+
       final exitPrice =
           (p.side == TradeSide.buy) ? bidPrice.value : askPrice.value;
 
@@ -1044,8 +1057,9 @@ class TradeChartController extends GetxController {
         final pl = _positionPL(p);
         final marginLimit = -(p.marginUsed);
         // CRITICAL: Only auto-close if loss is significantly beyond margin (with small buffer to prevent false triggers)
-        final shouldAutoClose = pl < marginLimit * 1.01; // 1% buffer to prevent false triggers
-        
+        final shouldAutoClose =
+            pl < marginLimit * 1.01; // 1% buffer to prevent false triggers
+
         if (shouldAutoClose) {
           _triggeredTrades.add(p.tradeid);
           _triggerClose(p);
@@ -1058,7 +1072,7 @@ class TradeChartController extends GetxController {
       // SELL: SL triggers when price RISES to/above SL, TP triggers when price FALLS to/below TP
       bool hitSL = false;
       bool hitTP = false;
-      
+
       if (p.stopLoss != null && p.stopLoss! > 0.0) {
         if (p.side == TradeSide.buy) {
           // BUY: SL triggers when price falls to or below stop loss
@@ -1156,9 +1170,12 @@ class TradeChartController extends GetxController {
   final List<Future Function()> _tradeQueue = [];
   bool _isProcessingTradeQueue = false;
   final Set<String> _closingTrades = {}; // prevent duplicate closes
-  final Set<String> _triggeredTrades = {}; // track trades that have triggered TP/SL to prevent re-triggering
-  final Set<String> _executingOrderIds = {}; // track orders currently being executed to prevent duplicates
-  final Map<String, double> _pendingOrderReferencePrices = {}; // fallback reference price when backend data is missing
+  final Set<String> _triggeredTrades =
+      {}; // track trades that have triggered TP/SL to prevent re-triggering
+  final Set<String> _executingOrderIds =
+      {}; // track orders currently being executed to prevent duplicates
+  final Map<String, double> _pendingOrderReferencePrices =
+      {}; // fallback reference price when backend data is missing
   //  Add trade operation to queue (for background sync, not blocking)
 
   void _enqueueTrade(Future Function() op, {bool isCloseTrade = false}) {
@@ -1191,7 +1208,8 @@ class TradeChartController extends GetxController {
           // Debounce to prevent rapid updates
           _fetchDebounceTimer?.cancel();
           _fetchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-            getYourTradePositions(silent: true); // Only refresh active trades API
+            getYourTradePositions(
+                silent: true); // Only refresh active trades API
           });
           _recalcAccount();
         }
@@ -1440,7 +1458,7 @@ class TradeChartController extends GetxController {
       // Collect all positions to close (copy list to avoid modification during iteration)
       final positionsToClose = List<Position>.from(positions);
       final closedTradeIds = <String>{};
-      
+
       for (final p in positionsToClose) {
         // close trades and save trades for history
         final sp = await SharedPreferences.getInstance();
@@ -1475,17 +1493,17 @@ class TradeChartController extends GetxController {
 
       // Calculate and update balance
       await creditCalculations(realized);
-      
+
       // Remove all positions immediately - prevent reappearing/blinking
       positions.clear();
       // Also remove from confirmedTrades if present
       confirmedTrades.removeWhere((t) => closedTradeIds.contains(t.tradeid));
-      
+
       // Immediately update UI (removes trades from trade screen instantly)
       await refreshChartTradeLines();
       await _recalcUsedMargin();
       _recalcAccount();
-      
+
       if (equity.value < 0 || balance.value < 0) {
         balance.value = 0.0;
       }
@@ -1511,22 +1529,23 @@ class TradeChartController extends GetxController {
 
       // Update server with cleared positions
       await updateYourTradePositions();
-      
+
       // Update balance/equity/margin on server
       await updateYourBalance();
-      
+
       // Fetch fresh balance from server
       await getYourBalance();
-      
+
       // Wait longer before refreshing positions to give server time to update
       // This prevents closed trades from reappearing
       _fetchDebounceTimer?.cancel();
       _fetchDebounceTimer = Timer(const Duration(seconds: 2), () {
-        getYourTradePositions(silent: true, force: true); // Force refresh after delay
+        getYourTradePositions(
+            silent: true, force: true); // Force refresh after delay
         // Restart polling after refresh
         _startPositionsPolling();
       });
-      
+
       // Ensure UI updates (balance/equity/margin)
       _recalcAccount();
     } catch (e) {
@@ -1636,21 +1655,22 @@ class TradeChartController extends GetxController {
 
       // Update server with closed positions
       await updateYourTradePositions();
-      
+
       // Update balance/equity/margin on server
       await updateYourBalance();
-      
+
       // Fetch fresh balance from server
       await getYourBalance();
-      
+
       // Wait longer before refreshing positions to give server time to update
       _fetchDebounceTimer?.cancel();
       _fetchDebounceTimer = Timer(const Duration(seconds: 2), () {
-        getYourTradePositions(silent: true, force: true); // Force refresh after delay
+        getYourTradePositions(
+            silent: true, force: true); // Force refresh after delay
         // Restart polling after refresh
         _startPositionsPolling();
       });
-      
+
       // Ensure UI updates (balance/equity/margin)
       _recalcAccount();
     } catch (e) {
@@ -1752,21 +1772,22 @@ class TradeChartController extends GetxController {
 
       // Update server with closed positions
       await updateYourTradePositions();
-      
+
       // Update balance/equity/margin on server
       await updateYourBalance();
-      
+
       // Fetch fresh balance from server
       await getYourBalance();
-      
+
       // Wait longer before refreshing positions to give server time to update
       _fetchDebounceTimer?.cancel();
       _fetchDebounceTimer = Timer(const Duration(seconds: 2), () {
-        getYourTradePositions(silent: true, force: true); // Force refresh after delay
+        getYourTradePositions(
+            silent: true, force: true); // Force refresh after delay
         // Restart polling after refresh
         _startPositionsPolling();
       });
-      
+
       // Ensure UI updates (balance/equity/margin)
       _recalcAccount();
     } catch (e) {
@@ -2235,13 +2256,15 @@ class TradeChartController extends GetxController {
                     "entryPrice": o.entryPrice,
                     "contractSize": o.contractSize,
                     "marginUsed": o.marginUsed,
-                    "openedAt": DateFormat("yyyy-MM-dd HH:mm:ss").format(o.createdAt),
+                    "openedAt":
+                        DateFormat("yyyy-MM-dd HH:mm:ss").format(o.createdAt),
                     "symbol": o.symbol,
                     "stopLoss": o.stopLoss > 0 ? o.stopLoss : null,
                     "takeProfit": o.takeProfit > 0 ? o.takeProfit : null,
                     "status": "pending",
                     "priceAtCreation": o.priceAtCreation,
-                    "hasPriceCrossedEntry": o.hasPriceCrossedEntry, // Save the flag
+                    "hasPriceCrossedEntry":
+                        o.hasPriceCrossedEntry, // Save the flag
                   })
               .toList()
           : <Map<String, dynamic>>[];
@@ -2290,7 +2313,7 @@ class TradeChartController extends GetxController {
         selectedMode.value,
         pendingOrders: [pendingOrderJson],
       );
-      
+
       if (response != null && response.statusCode == 200) {
         debugPrint("Pending order saved to backend: ${order.orderId}");
       }
@@ -2336,7 +2359,7 @@ class TradeChartController extends GetxController {
         selectedMode.value,
         pendingOrders: [updatedOrderJson],
       );
-      
+
       if (response != null && response.statusCode == 200) {
         debugPrint("Pending order status updated: $orderId -> $status");
       }
@@ -2348,15 +2371,16 @@ class TradeChartController extends GetxController {
   /*-----------------------------------------------*/
   /*               get trade positions             */
   /*-----------------------------------------------*/
-  Future<void> getYourTradePositions({bool silent = false, bool force = false}) async {
+  Future<void> getYourTradePositions(
+      {bool silent = false, bool force = false}) async {
     // Prevent concurrent fetches to avoid flickering
     if (_isFetchingPositions && !force) {
       return;
     }
-    
+
     try {
       _isFetchingPositions = true;
-      
+
       if (!silent) {
         isTradeLoader.value = true;
       }
@@ -2372,32 +2396,46 @@ class TradeChartController extends GetxController {
         } else if (data is Map && data.containsKey("data")) {
           tradesData = data["data"] as List<dynamic>;
         }
-        
+
         // Parse positions and pending orders from API
         final apiPositions = <Position>[];
         final apiPendingOrders = <PendingOrder>[];
-        
+
         const pendingStatuses = {"pending", "waiting", "in order"};
-        const executedStatuses = {"executed", "active", "running", "open", "closed", "completed", "filled"};
-        
+        const executedStatuses = {
+          "executed",
+          "active",
+          "running",
+          "open",
+          "closed",
+          "completed",
+          "filled"
+        };
+
         for (final item in tradesData) {
           final json = item as Map<String, dynamic>;
-          final rawStatus = ((json["status"] as String?) ?? "").trim().toLowerCase();
-          final tradeId = json["tradeid"]?.toString() ?? json["orderId"]?.toString() ?? "";
-          
+          final rawStatus =
+              ((json["status"] as String?) ?? "").trim().toLowerCase();
+          final tradeId =
+              json["tradeid"]?.toString() ?? json["orderId"]?.toString() ?? "";
+
           // CRITICAL: Skip if this trade is currently being executed (prevent race condition)
           if (_executingOrderIds.contains(tradeId)) {
             continue;
           }
-          
-          final isPendingStatus = rawStatus.contains("pending") || rawStatus.contains("waiting") || pendingStatuses.contains(rawStatus);
-          final isExecutedStatus = rawStatus.contains("execut") || executedStatuses.contains(rawStatus);
-          
+
+          final isPendingStatus = rawStatus.contains("pending") ||
+              rawStatus.contains("waiting") ||
+              pendingStatuses.contains(rawStatus);
+          final isExecutedStatus = rawStatus.contains("execut") ||
+              executedStatuses.contains(rawStatus);
+
           if (isPendingStatus && !isExecutedStatus) {
             // Treat as pending order
             try {
               final pendingOrder = PendingOrder.fromJson(json);
-              if (!pendingOrder.isExecuted && !_executingOrderIds.contains(pendingOrder.orderId)) {
+              if (!pendingOrder.isExecuted &&
+                  !_executingOrderIds.contains(pendingOrder.orderId)) {
                 apiPendingOrders.add(pendingOrder);
               }
             } catch (e) {
@@ -2415,15 +2453,18 @@ class TradeChartController extends GetxController {
             }
           }
         }
-        
+
         final executedFromApiIds = apiPositions.map((p) => p.tradeid).toSet();
-        apiPendingOrders.removeWhere((pending) => executedFromApiIds.contains(pending.orderId));
-        
+        apiPendingOrders.removeWhere(
+            (pending) => executedFromApiIds.contains(pending.orderId));
+
         // Restore pending orders from API (replace local list with API data)
         // This ensures pending orders persist across app restarts and account switches
-        final existingPendingOrderIds = pendingOrders.map((o) => o.orderId).toSet();
-        final apiPendingOrderIds = apiPendingOrders.map((o) => o.orderId).toSet();
-        
+        final existingPendingOrderIds =
+            pendingOrders.map((o) => o.orderId).toSet();
+        final apiPendingOrderIds =
+            apiPendingOrders.map((o) => o.orderId).toSet();
+
         // CRITICAL: Never remove pending orders that are still waiting
         // Only remove if they're executed or explicitly deleted from backend
         // Keep local orders that were just created (not yet synced to API) for 120 seconds
@@ -2432,21 +2473,27 @@ class TradeChartController extends GetxController {
           if (_executingOrderIds.contains(o.orderId)) {
             return false;
           }
-          
+
           // Keep if: order exists in API, order was created recently (within last 120 seconds), or order is not executed
-          final isRecent = DateTime.now().difference(o.createdAt).inSeconds < 120;
+          final isRecent =
+              DateTime.now().difference(o.createdAt).inSeconds < 120;
           // Only remove if order is NOT in API AND NOT recent AND NOT executed AND NOT executing
           // This ensures waiting orders NEVER disappear unless executed or manually closed
-          final shouldRemove = !apiPendingOrderIds.contains(o.orderId) && !isRecent && !o.isExecuted;
+          final shouldRemove = !apiPendingOrderIds.contains(o.orderId) &&
+              !isRecent &&
+              !o.isExecuted;
           if (shouldRemove) {
-            debugPrint("Removing pending order ${o.orderId} - not in API, not recent, not executed");
+            debugPrint(
+                "Removing pending order ${o.orderId} - not in API, not recent, not executed");
             _pendingOrderReferencePrices.remove(o.orderId);
           }
           return shouldRemove;
         });
-        
+
         // Add new pending orders from API that we don't have locally
-        final apiPendingOrdersFiltered = apiPendingOrders.where((pending) => pending.lots > 0 && pending.orderId.isNotEmpty).toList();
+        final apiPendingOrdersFiltered = apiPendingOrders
+            .where((pending) => pending.lots > 0 && pending.orderId.isNotEmpty)
+            .toList();
         for (final apiOrder in apiPendingOrdersFiltered) {
           if (!existingPendingOrderIds.contains(apiOrder.orderId)) {
             // Add new pending order from API
@@ -2454,15 +2501,20 @@ class TradeChartController extends GetxController {
             // They must wait for price to actually cross, even if backend says they crossed
             apiOrder.hasPriceCrossedEntry = false;
             pendingOrders.add(apiOrder);
-            final refPrice = apiOrder.priceAtCreation > 0 ? apiOrder.priceAtCreation : apiOrder.entryPrice;
+            final refPrice = apiOrder.priceAtCreation > 0
+                ? apiOrder.priceAtCreation
+                : apiOrder.entryPrice;
             _pendingOrderReferencePrices[apiOrder.orderId] = refPrice;
           } else {
             // Update existing pending order with API data
-            final index = pendingOrders.indexWhere((o) => o.orderId == apiOrder.orderId);
+            final index =
+                pendingOrders.indexWhere((o) => o.orderId == apiOrder.orderId);
             if (index != -1) {
               // Preserve hasPriceCrossedEntry if order was just created locally and not yet crossed
               final existingOrder = pendingOrders[index];
-              final isRecent = DateTime.now().difference(existingOrder.createdAt).inSeconds < 60;
+              final isRecent =
+                  DateTime.now().difference(existingOrder.createdAt).inSeconds <
+                      60;
               if (isRecent && !existingOrder.hasPriceCrossedEntry) {
                 // Keep local hasPriceCrossedEntry if order is recent and not yet crossed
                 apiOrder.hasPriceCrossedEntry = false;
@@ -2475,25 +2527,28 @@ class TradeChartController extends GetxController {
                 pendingOrders[index] = apiOrder;
                 // CRITICAL: Clear cache to force rebuild of allTradeItems
                 _cachedAllTradeItems = null;
-                final refPrice = apiOrder.priceAtCreation > 0 ? apiOrder.priceAtCreation : apiOrder.entryPrice;
+                final refPrice = apiOrder.priceAtCreation > 0
+                    ? apiOrder.priceAtCreation
+                    : apiOrder.entryPrice;
                 _pendingOrderReferencePrices[apiOrder.orderId] = refPrice;
               }
             }
           }
         }
-        
+
         // CRITICAL: Clear cache if pending orders changed
-        if (apiPendingOrders.isNotEmpty || pendingOrders.length != existingPendingOrderIds.length) {
+        if (apiPendingOrders.isNotEmpty ||
+            pendingOrders.length != existingPendingOrderIds.length) {
           _cachedAllTradeItems = null;
         }
-        
+
         // Create a set of API trade IDs for quick lookup
         final apiTradeIds = apiPositions.map((p) => p.tradeid).toSet();
-        
+
         // Merge with existing positions to preserve app-bought trades that haven't synced yet
         // Remove closed trades (not in API response) but keep app-bought trades
         final Map<String, Position> mergedPositions = {};
-        
+
         // First add existing positions that are still active (in API) or are app-bought (recently added)
         // BUT exclude closed trades (prevent re-adding)
         for (final pos in positions) {
@@ -2501,15 +2556,16 @@ class TradeChartController extends GetxController {
           if (_closedTradeIds.contains(pos.tradeid)) {
             continue;
           }
-          
+
           // Keep if in API response (still active) or if it's a recent app-bought trade (added in last 10 seconds)
-          final isRecent = DateTime.now().difference(pos.openedAt).inSeconds < 10;
-          
+          final isRecent =
+              DateTime.now().difference(pos.openedAt).inSeconds < 10;
+
           if (apiTradeIds.contains(pos.tradeid) || isRecent) {
             mergedPositions[pos.tradeid] = pos;
           }
         }
-        
+
         // Also filter out closed trades from API positions and add them
         // CRITICAL: Prevent duplicates - check if position already exists
         for (final pos in apiPositions) {
@@ -2521,16 +2577,18 @@ class TradeChartController extends GetxController {
             mergedPositions[pos.tradeid] = pos;
           }
         }
-        
+
         // CRITICAL: Remove pending orders that were executed - prevent showing as both "Waiting" and "Executed"
         final executedOrderIds = mergedPositions.keys.toSet();
         final beforePendingCount = pendingOrders.length;
         pendingOrders.removeWhere((o) {
           // Remove if order ID matches an executed position (prevent duplicate display)
           if (executedOrderIds.contains(o.orderId)) {
-            final hadLocalRef = _pendingOrderReferencePrices.containsKey(o.orderId);
+            final hadLocalRef =
+                _pendingOrderReferencePrices.containsKey(o.orderId);
             if (!hadLocalRef) {
-              debugPrint("Removing pending order ${o.orderId} - now exists as executed position");
+              debugPrint(
+                  "Removing pending order ${o.orderId} - now exists as executed position");
               _pendingOrderReferencePrices.remove(o.orderId);
               return true;
             }
@@ -2542,15 +2600,15 @@ class TradeChartController extends GetxController {
         if (beforePendingCount != pendingOrders.length) {
           _cachedAllTradeItems = null; // Clear cache if pending orders changed
         }
-        
+
         // Only update if positions actually changed to prevent unnecessary UI updates
         final newPositionsList = mergedPositions.values.toList();
         final currentIds = positions.map((p) => p.tradeid).toSet();
         final newIds = newPositionsList.map((p) => p.tradeid).toSet();
-        
+
         // Check if there's an actual change
-        if (currentIds.length != newIds.length || 
-            !currentIds.containsAll(newIds) || 
+        if (currentIds.length != newIds.length ||
+            !currentIds.containsAll(newIds) ||
             !newIds.containsAll(currentIds)) {
           positions.value = newPositionsList;
           // CRITICAL: Clear cache to force rebuild of allTradeItems
@@ -2569,10 +2627,12 @@ class TradeChartController extends GetxController {
           // Remove closed trades (not in API) but keep recent app-bought trades
           final beforeLength = positions.length;
           positions.removeWhere((pos) {
-            final isRecent = DateTime.now().difference(pos.openedAt).inSeconds < 10;
+            final isRecent =
+                DateTime.now().difference(pos.openedAt).inSeconds < 10;
             return !isRecent; // Remove if not recent (closed)
           });
-          if (beforeLength != positions.length) { // Check if changed
+          if (beforeLength != positions.length) {
+            // Check if changed
             await refreshChartTradeLines();
             await _recalcUsedMargin();
             _recalcAccount();
@@ -2598,21 +2658,22 @@ class TradeChartController extends GetxController {
   void _startPositionsPolling() {
     // Cancel existing timer if any
     _positionsPollTimer?.cancel();
-    
+
     // CRITICAL: Poll every 15 seconds (increased from 8 to reduce blinking/flickering)
     // Only poll when not already fetching to prevent overlapping requests
     _positionsPollTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       if (!isConnectedToInterNet.value || _isFetchingPositions) {
         return; // Skip polling if no internet or already fetching
       }
-      
+
       // CRITICAL: Debounce to prevent rapid consecutive calls
       _fetchDebounceTimer?.cancel();
       _fetchDebounceTimer = Timer(const Duration(milliseconds: 2000), () {
         // Only fetch if not already fetching
         if (!_isFetchingPositions) {
           // Silently refresh active trades to detect backend/admin-added trades
-          getYourTradePositions(silent: true, force: false); // Only refresh active trades API
+          getYourTradePositions(
+              silent: true, force: false); // Only refresh active trades API
         }
       });
     });
@@ -2633,18 +2694,18 @@ class TradeChartController extends GetxController {
     if (_isFetchingConfirmed && !force) {
       return;
     }
-    
+
     try {
       _isFetchingConfirmed = true;
       isLoadingConfirmedTrades.value = true;
-      
+
       final response = await TradingServices.getTradesHistory(
         100, // Fetch up to 100 recent trades
         0,
         null, // No date filter
         null,
       );
-      
+
       if (response != null) {
         // Handle 404 - No trade history found (show empty state)
         if (response.statusCode == 404) {
@@ -2654,12 +2715,12 @@ class TradeChartController extends GetxController {
           }
           return;
         }
-        
+
         // Handle 200 - Success
         if (response.statusCode == 200) {
           try {
             final data = jsonDecode(response.body);
-            
+
             // Handle null/empty response
             if (data == null) {
               if (confirmedTrades.isNotEmpty) {
@@ -2667,12 +2728,16 @@ class TradeChartController extends GetxController {
               }
               return;
             }
-            
+
             // Check for TotalRecords field - if 0, show empty state
             if (data is Map) {
-              final totalRecords = data['TotalRecords'] ?? data['totalRecords'] ?? data['total_records'];
+              final totalRecords = data['TotalRecords'] ??
+                  data['totalRecords'] ??
+                  data['total_records'];
               if (totalRecords != null) {
-                final total = totalRecords is int ? totalRecords : int.tryParse(totalRecords.toString()) ?? 0;
+                final total = totalRecords is int
+                    ? totalRecords
+                    : int.tryParse(totalRecords.toString()) ?? 0;
                 if (total == 0) {
                   if (confirmedTrades.isNotEmpty) {
                     confirmedTrades.clear();
@@ -2680,12 +2745,12 @@ class TradeChartController extends GetxController {
                   return;
                 }
               }
-              
+
               // Check for error message in response body
               if (data['message'] != null) {
                 final message = data['message'].toString().toLowerCase();
-                if (message.contains('no trade history') || 
-                    message.contains('not found') || 
+                if (message.contains('no trade history') ||
+                    message.contains('not found') ||
                     message.contains('no trades')) {
                   if (confirmedTrades.isNotEmpty) {
                     confirmedTrades.clear();
@@ -2694,13 +2759,14 @@ class TradeChartController extends GetxController {
                 }
               }
             }
-            
+
             // Extract Data array from API response
             final List<dynamic> tradesJson;
             if (data is List) {
               tradesJson = data.isEmpty ? [] : data;
             } else if (data is Map) {
-              tradesJson = (data['Data'] ?? data['data'] ?? []) as List<dynamic>;
+              tradesJson =
+                  (data['Data'] ?? data['data'] ?? []) as List<dynamic>;
             } else {
               tradesJson = [];
             }
@@ -2728,18 +2794,18 @@ class TradeChartController extends GetxController {
 
             // Get active trade IDs from positions to avoid duplicates
             final activeTradeIds = positions.map((p) => p.tradeid).toSet();
-            
+
             // Filter to only trades not in positions (active trades from backend/admin)
             final newConfirmedTrades = apiTrades
                 .where((trade) => !activeTradeIds.contains(trade.tradeid))
                 .toList();
-            
+
             // Only update if data actually changed to prevent flickering
             final currentIds = confirmedTrades.map((t) => t.tradeid).toSet();
             final newIds = newConfirmedTrades.map((t) => t.tradeid).toSet();
-            
-            if (currentIds.length != newIds.length || 
-                !currentIds.containsAll(newIds) || 
+
+            if (currentIds.length != newIds.length ||
+                !currentIds.containsAll(newIds) ||
                 !newIds.containsAll(currentIds)) {
               confirmedTrades.value = newConfirmedTrades;
             }
@@ -2748,7 +2814,8 @@ class TradeChartController extends GetxController {
             // Don't clear on parsing error - keep existing data
           }
         } else {
-          debugPrint("Error fetching confirmed trades: Status ${response.statusCode}");
+          debugPrint(
+              "Error fetching confirmed trades: Status ${response.statusCode}");
           // Don't clear on error - keep existing data
         }
       }
@@ -2776,15 +2843,16 @@ class TradeChartController extends GetxController {
   // Cache for allTradeItems to prevent unnecessary rebuilds
   List<dynamic>? _cachedAllTradeItems;
   DateTime? _lastAllTradeItemsUpdate;
-  
+
   List<dynamic> get allTradeItems {
     // CRITICAL: Cache the list to prevent unnecessary rebuilds and blinking
     // Only rebuild if positions or pendingOrders actually changed
     final now = DateTime.now();
-    final shouldRebuild = _cachedAllTradeItems == null || 
+    final shouldRebuild = _cachedAllTradeItems == null ||
         _lastAllTradeItemsUpdate == null ||
-        now.difference(_lastAllTradeItemsUpdate!).inMilliseconds > 100; // Debounce to 100ms
-    
+        now.difference(_lastAllTradeItemsUpdate!).inMilliseconds >
+            100; // Debounce to 100ms
+
     if (shouldRebuild) {
       // Combine active positions and pending orders (only non-executed)
       // CRITICAL: Only show waiting pending orders, never executed ones
@@ -2795,7 +2863,7 @@ class TradeChartController extends GetxController {
       _cachedAllTradeItems = items;
       _lastAllTradeItemsUpdate = now;
     }
-    
+
     return _cachedAllTradeItems ?? [];
   }
 
@@ -2810,7 +2878,7 @@ class TradeChartController extends GetxController {
         getYourTradePositions(force: true), // Force fetch active trades only
         getYourBalance(),
       ]);
-      
+
       // Recalculate account metrics (balance/equity/margin)
       await _recalcUsedMargin();
       _recalcAccount();
@@ -2843,10 +2911,10 @@ class TradeChartController extends GetxController {
     try {
       // Only save if there are trades to save (prevent empty API calls)
       if (closeTradeList.isEmpty) return;
-      
+
       // Create a copy to avoid issues if list is modified during API call
       final tradesToSave = List<CloseTradesModel>.from(closeTradeList);
-      
+
       final response = await TradingServices.saveCompletedTrades(
         tradesToSave,
         selectedMode.value,
