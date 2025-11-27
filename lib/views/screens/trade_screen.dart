@@ -569,26 +569,47 @@ class _TradeScreenState extends State<TradeScreen> with RouteAware {
                           final allItems = c.allTradeItems;
 
                           return allItems.isEmpty
-                              ? RefreshIndicator(
-                                  color: colorConstants.secondaryColor,
-                                  onRefresh: () async {
-                                    await c.refreshAllTradeData();
-                                  },
-                                  child: SingleChildScrollView(
-                                    physics: AlwaysScrollableScrollPhysics(),
-                                    child: SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
+                              ? FutureBuilder(
+                                  future: c
+                                      .refreshAllTradeData(), // ALWAYS refresh once
+                                  builder: (context, snapshot) {
+                                    // While refreshing (initial load)
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return Center(
+                                        child: CircularProgressIndicator(
+                                          color: colorConstants.secondaryColor,
+                                        ),
+                                      );
+                                    }
+
+                                    // After refresh completes, still empty → show message
+                                    return RefreshIndicator(
+                                      color: colorConstants.secondaryColor,
+                                      onRefresh: () async {
+                                        await c
+                                            .refreshAllTradeData(); // manual refresh
+                                      },
+                                      child: SingleChildScrollView(
+                                        physics:
+                                            AlwaysScrollableScrollPhysics(),
+                                        child: SizedBox(
+                                          height: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
                                               0.3,
-                                      child: Center(
-                                        child: CustomText(
-                                          "No trades found",
-                                          size: 14.sp,
-                                          color: colorConstants.hintTextColor,
+                                          child: Center(
+                                            child: CustomText(
+                                              "No trades found",
+                                              size: 14.sp,
+                                              color:
+                                                  colorConstants.hintTextColor,
+                                            ),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  },
                                 )
                               : RefreshIndicator(
                                   color: colorConstants.secondaryColor,
