@@ -688,7 +688,7 @@ class _TradeScreenState extends State<TradeScreen> with RouteAware {
             ),
             child: CustomText(
               "Waiting",
-              size: 15.sp,
+              size: 9.sp,
               color: colorConstants.secondaryColor,
               fw: FontWeight.w600,
             ),
