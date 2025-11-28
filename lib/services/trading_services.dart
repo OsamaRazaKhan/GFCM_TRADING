@@ -257,7 +257,7 @@ class TradingServices {
       );
       // Convert list of positions to JSON
       body = jsonEncode(closeTradeList.map((pos) => pos.toJson()).toList());
-
+      print(body);
       final response = await http.post(
         uri,
         headers: {"Content-Type": "application/json"},

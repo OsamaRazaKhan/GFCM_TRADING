@@ -6,18 +6,18 @@ class SignalsModel {
   String? validtill;
   String? message;
   String? status;
+  String? time; // Timer in seconds from API
   int? timer; // Timer in seconds from API
-
-  SignalsModel({
-    this.id,
-    this.userid,
-    this.firstname,
-    this.lastname,
-    this.validtill,
-    this.message,
-    this.status,
-    this.timer,
-  });
+  SignalsModel(
+      {this.id,
+      this.userid,
+      this.firstname,
+      this.lastname,
+      this.validtill,
+      this.message,
+      this.status,
+      this.timer,
+      this.time});
 
   factory SignalsModel.fromJson(Map<String, dynamic> json) {
     final SignalsModel signalsModel = SignalsModel(
@@ -28,12 +28,12 @@ class SignalsModel {
       validtill: json["validtill"]?.toString(),
       message: json["message"]?.toString(),
       status: json["status"]?.toString(),
-      // timer: json["timer"] != null ? (json["timer"] is int ? json["timer"] : int.tryParse(json["timer"].toString())) : null,
-      timer: json["time"] != null
-          ? (json["time"] is int
-              ? json["time"]
-              : int.tryParse(json["time"].toString()))
+      timer: json["timer"] != null
+          ? (json["timer"] is int
+              ? json["timer"]
+              : int.tryParse(json["timer"].toString()))
           : null,
+      time: json["time"]?.toString(),
     );
     return signalsModel;
   }
@@ -46,7 +46,7 @@ class SignalsModel {
         "validtill": validtill,
         "message": message,
         "status": status,
-        // "timer": timer,
-        "time": timer,
+        "timer": timer,
+        "time": time,
       };
 }

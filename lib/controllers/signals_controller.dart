@@ -138,30 +138,64 @@ class SignalsController extends GetxController {
   /*                    Calculate remaining time in seconds               */
   /*----------------------------------------------------------------------*/
 
+  // int getRemainingSeconds(SignalsModel signal) {
+  //   if (signal.validtill == null || signal.validtill!.isEmpty) {
+  //     return -1; // No expiry date
+  //   }
+
+  //   try {
+  //     DateTime expiryDate;
+
+  //     // Try parsing as YYYY-MM-DD format
+  //     try {
+  //       final parsed = DateFormat('yyyy-MM-dd').parse(signal.validtill!);
+  //       // Set expiry time to end of day (23:59:59)
+  //       expiryDate =
+  //           DateTime(parsed.year, parsed.month, parsed.day, 23, 59, 59);
+  //     } catch (e) {
+  //       // Try parsing as full datetime
+  //       expiryDate = DateTime.parse(signal.validtill!);
+  //     }
+
+  //     final now = DateTime.now();
+  //     final difference = expiryDate.difference(now).inSeconds;
+  //     return difference;
+  //   } catch (e) {
+  //     return -1; // Error parsing, return -1
+  //   }
+  // }
+
+  ///updated function to calculate time also
   int getRemainingSeconds(SignalsModel signal) {
     if (signal.validtill == null || signal.validtill!.isEmpty) {
-      return -1; // No expiry date
+      return -1;
+    }
+
+    if (signal.time == null || signal.time!.isEmpty) {
+      return -1;
     }
 
     try {
-      DateTime expiryDate;
+      // Parse date
+      final parsedDate = DateFormat('yyyy-MM-dd').parse(signal.validtill!);
 
-      // Try parsing as YYYY-MM-DD format
-      try {
-        final parsed = DateFormat('yyyy-MM-dd').parse(signal.validtill!);
-        // Set expiry time to end of day (23:59:59)
-        expiryDate =
-            DateTime(parsed.year, parsed.month, parsed.day, 23, 59, 59);
-      } catch (e) {
-        // Try parsing as full datetime
-        expiryDate = DateTime.parse(signal.validtill!);
-      }
+      // Parse time (HH:mm)
+      final parsedTime = DateFormat('HH:mm').parse(signal.time!);
+
+      // Create COMPLETE expiry datetime
+      final expiryDate = DateTime(
+        parsedDate.year,
+        parsedDate.month,
+        parsedDate.day,
+        parsedTime.hour,
+        parsedTime.minute,
+        0,
+      );
 
       final now = DateTime.now();
-      final difference = expiryDate.difference(now).inSeconds;
-      return difference;
+      return expiryDate.difference(now).inSeconds;
     } catch (e) {
-      return -1; // Error parsing, return -1
+      return -1;
     }
   }
 
