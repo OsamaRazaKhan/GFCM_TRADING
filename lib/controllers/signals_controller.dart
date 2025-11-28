@@ -13,9 +13,10 @@ class SignalsController extends GetxController {
   List<SignalsModel> signalsList = [];
   bool isSignalsLoading = false;
   Map<int, bool> isSignalsUpdateLoading = {}; // Changed to use signal id as key
-  Map<int, String?> pressedButton = {}; // Track which button was pressed: "Accepted" or "Rejected" or null
+  Map<int, String?> pressedButton =
+      {}; // Track which button was pressed: "Accepted" or "Rejected" or null
   Map<int, bool> expandedSignals = {}; // Track which signals are expanded
-  
+
   Timer? _countdownTimer;
   final ColorConstants colorConstants = ColorConstants();
 
@@ -36,9 +37,12 @@ class SignalsController extends GetxController {
   /*                              get signals                             */
   /*----------------------------------------------------------------------*/
 
-  void getSignals() async {
+  void getSignals({bool showSignalLoading = true}) async {
     try {
-      isSignalsLoading = true;
+      if (showSignalLoading) {
+        isSignalsLoading = true;
+      }
+
       update();
 
       var response = await TradingServices.getSignalsApi();
@@ -51,9 +55,10 @@ class SignalsController extends GetxController {
           if (responseData is List) {
             data = responseData;
           } else if (responseData is Map) {
-            data = responseData['data'] as List? ?? 
-                   responseData['Data'] as List? ?? 
-                   responseData['signals'] as List? ?? [];
+            data = responseData['data'] as List? ??
+                responseData['Data'] as List? ??
+                responseData['signals'] as List? ??
+                [];
           }
 
           signalsList = data
@@ -90,7 +95,7 @@ class SignalsController extends GetxController {
   /*----------------------------------------------------------------------*/
   /*                    Check if signal is active                        */
   /*----------------------------------------------------------------------*/
-  
+
   bool isSignalActive(SignalsModel signal) {
     // Signal is active if status is not "Accepted" or "Rejected" and not expired
     final status = signal.status?.toLowerCase() ?? '';
@@ -102,19 +107,20 @@ class SignalsController extends GetxController {
   /*----------------------------------------------------------------------*/
   /*                    Check if signal is expired                       */
   /*----------------------------------------------------------------------*/
-  
+
   bool _isExpired(SignalsModel signal) {
     if (signal.validtill == null || signal.validtill!.isEmpty) {
       return false; // If no expiry date, consider it not expired
     }
-    
+
     try {
       // Try parsing as YYYY-MM-DD format
       final expiryDate = DateFormat('yyyy-MM-dd').parse(signal.validtill!);
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      final expiry = DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
-      
+      final expiry =
+          DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+
       return today.isAfter(expiry);
     } catch (e) {
       // If parsing fails, try other formats
@@ -131,25 +137,26 @@ class SignalsController extends GetxController {
   /*----------------------------------------------------------------------*/
   /*                    Calculate remaining time in seconds               */
   /*----------------------------------------------------------------------*/
-  
+
   int getRemainingSeconds(SignalsModel signal) {
     if (signal.validtill == null || signal.validtill!.isEmpty) {
       return -1; // No expiry date
     }
-    
+
     try {
       DateTime expiryDate;
-      
+
       // Try parsing as YYYY-MM-DD format
       try {
         final parsed = DateFormat('yyyy-MM-dd').parse(signal.validtill!);
         // Set expiry time to end of day (23:59:59)
-        expiryDate = DateTime(parsed.year, parsed.month, parsed.day, 23, 59, 59);
+        expiryDate =
+            DateTime(parsed.year, parsed.month, parsed.day, 23, 59, 59);
       } catch (e) {
         // Try parsing as full datetime
         expiryDate = DateTime.parse(signal.validtill!);
       }
-      
+
       final now = DateTime.now();
       final difference = expiryDate.difference(now).inSeconds;
       return difference;
@@ -161,7 +168,7 @@ class SignalsController extends GetxController {
   /*----------------------------------------------------------------------*/
   /*                    Start countdown timer                            */
   /*----------------------------------------------------------------------*/
-  
+
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -173,7 +180,7 @@ class SignalsController extends GetxController {
   /*----------------------------------------------------------------------*/
   /*                    Toggle signal expansion                           */
   /*----------------------------------------------------------------------*/
-  
+
   void toggleSignalExpansion(int signalId) {
     expandedSignals[signalId] = !(expandedSignals[signalId] ?? false);
     update();
@@ -235,18 +242,18 @@ class SignalsController extends GetxController {
         if (response.statusCode == 200) {
           // Update local signal status
           signalsList[signalIndex].status = status;
-          
+
           // Collapse the expanded signal
           expandedSignals[signalId] = false;
-          
+
           FlushMessages.commonToast(
             "Signal ${status.toLowerCase()} successfully",
             backGroundColor: colorConstants.secondaryColor,
           );
-          
+
           // CRITICAL: Update UI immediately to show status change
           update();
-          
+
           // Refresh signals list to get updated data from server (async, don't block)
           Future.delayed(const Duration(milliseconds: 500), () {
             getSignals();
@@ -254,11 +261,13 @@ class SignalsController extends GetxController {
         } else {
           // CRITICAL: Revert UI on error
           signalsList[signalIndex].status = originalStatus;
-          
+
           // Try to parse error message
           try {
             final errorData = jsonDecode(response.body);
-            final errorMsg = errorData['message'] ?? errorData['error'] ?? "Failed to update signal";
+            final errorMsg = errorData['message'] ??
+                errorData['error'] ??
+                "Failed to update signal";
             FlushMessages.commonToast(
               errorMsg.toString(),
               backGroundColor: colorConstants.dimGrayColor,

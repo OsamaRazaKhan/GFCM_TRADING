@@ -19,16 +19,24 @@ class SignalsModel {
     this.timer,
   });
 
-  factory SignalsModel.fromJson(Map<String, dynamic> json) => SignalsModel(
-        id: json["id"],
-        userid: json["userid"],
-        firstname: json["firstname"]?.toString(),
-        lastname: json["lastname"]?.toString(),
-        validtill: json["validtill"]?.toString(),
-        message: json["message"]?.toString(),
-        status: json["status"]?.toString(),
-        timer: json["timer"] != null ? (json["timer"] is int ? json["timer"] : int.tryParse(json["timer"].toString())) : null,
-      );
+  factory SignalsModel.fromJson(Map<String, dynamic> json) {
+    final SignalsModel signalsModel = SignalsModel(
+      id: json["id"],
+      userid: json["userid"],
+      firstname: json["firstname"]?.toString(),
+      lastname: json["lastname"]?.toString(),
+      validtill: json["validtill"]?.toString(),
+      message: json["message"]?.toString(),
+      status: json["status"]?.toString(),
+      // timer: json["timer"] != null ? (json["timer"] is int ? json["timer"] : int.tryParse(json["timer"].toString())) : null,
+      timer: json["time"] != null
+          ? (json["time"] is int
+              ? json["time"]
+              : int.tryParse(json["time"].toString()))
+          : null,
+    );
+    return signalsModel;
+  }
 
   Map<String, dynamic> toJson() => {
         "id": id,
@@ -38,6 +46,7 @@ class SignalsModel {
         "validtill": validtill,
         "message": message,
         "status": status,
-        "timer": timer,
+        // "timer": timer,
+        "time": timer,
       };
 }
