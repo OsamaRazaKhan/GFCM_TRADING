@@ -1534,7 +1534,7 @@ class TradeChartController extends GetxController {
 
       // Calculate and update balance
       await creditCalculations(realized);
-
+      print(balance.value);
       // Remove all positions immediately - prevent reappearing/blinking
       positions.clear();
       // Also remove from confirmedTrades if present
@@ -1542,9 +1542,11 @@ class TradeChartController extends GetxController {
 
       // Immediately update UI (removes trades from trade screen instantly)
       await refreshChartTradeLines();
+      print(balance.value);
       await _recalcUsedMargin();
+      print(balance.value);
       _recalcAccount();
-
+      print(balance.value);
       if (equity.value < 0 || balance.value < 0) {
         balance.value = 0.0;
       }
@@ -1556,10 +1558,10 @@ class TradeChartController extends GetxController {
 
       // Temporarily stop polling to prevent re-adding closed trades
       _stopPositionsPolling();
-
+      print(balance.value);
       // Save completed trades to history ONCE (no duplicates)
       await saveCompletedTradesForHistory();
-
+      print(balance.value);
       // Refresh history screen after saving
       try {
         final navController = Get.find<NavController>();
@@ -1567,11 +1569,12 @@ class TradeChartController extends GetxController {
       } catch (e) {
         debugPrint("Error refreshing history: $e");
       }
-
+      print(balance.value);
       // Update server with cleared positions
       await updateYourTradePositions();
 
       // Update balance/equity/margin on server
+      print(balance.value);
       await updateYourBalance();
 
       // Fetch fresh balance from server
@@ -2934,7 +2937,7 @@ class TradeChartController extends GetxController {
   Future<void> updateYourBalance() async {
     try {
       update();
-
+      print(balance.value);
       final response = await TradingServices.updateBalance(
         balance.value,
         marginUsed.value,
@@ -2955,11 +2958,12 @@ class TradeChartController extends GetxController {
 
       // Create a copy to avoid issues if list is modified during API call
       final tradesToSave = List<CloseTradesModel>.from(closeTradeList);
-
+      print(balance.value);
       final response = await TradingServices.saveCompletedTrades(
         tradesToSave,
         selectedMode.value,
       );
+      print(balance.value);
       if (response != null && response.statusCode == 200) {
         // Successfully saved - clear the list
         closeTradeList.clear();

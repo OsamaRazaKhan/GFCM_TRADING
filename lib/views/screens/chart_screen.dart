@@ -12,6 +12,7 @@ import 'package:gfcm_trading/views/custom_widgets/custom_empty_screen.dart';
 import 'package:gfcm_trading/views/custom_widgets/custom_text.dart';
 import 'package:gfcm_trading/views/custom_widgets/reuseable_drawer_widget.dart';
 import 'package:gfcm_trading/views/custom_widgets/top_trade_panel.dart';
+import 'package:gfcm_trading/views/screens/limit_sl_tp.dart';
 import 'package:gfcm_trading/views/screens/market_sl_tp.dart';
 import 'package:gfcm_trading/utils/flush_messages.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -74,7 +75,8 @@ class _ChartsScreenState extends State<ChartsScreen> with RouteAware {
               return GestureDetector(
                 onTap: () {
                   if (isConnected) {
-                    Get.to(() => const SLTPOrderScreen());
+                    // Get.to(() => const SLTPOrderScreen());
+                    Get.to(() => const LimitSlTp());
                   } else {
                     FlushMessages.commonToast(
                       "Please check your internet connection",
@@ -87,8 +89,8 @@ class _ChartsScreenState extends State<ChartsScreen> with RouteAware {
                   width: 22.w,
                   height: 22.w,
                   decoration: BoxDecoration(
-                    color: isConnected 
-                        ? colorConstants.secondaryColor 
+                    color: isConnected
+                        ? colorConstants.secondaryColor
                         : colorConstants.secondaryColor.withOpacity(0.5),
                     shape: BoxShape.circle,
                     boxShadow: [
@@ -206,7 +208,6 @@ class _ChartsScreenState extends State<ChartsScreen> with RouteAware {
                   ),
                 );
               }),
-
             ],
           ),
         ),

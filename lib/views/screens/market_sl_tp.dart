@@ -32,7 +32,7 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
 
   String? validationError;
   bool isSubmitting = false;
-  
+
   // New state variable for order type
   String selectedOrderType = "Market"; // "Market" or "Limit"
 
@@ -515,8 +515,9 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
         child: Icon(
           icon,
           size: 20.sp,
-          color:
-              enabled ? colorConstants.secondaryColor : colorConstants.hintTextColor,
+          color: enabled
+              ? colorConstants.secondaryColor
+              : colorConstants.hintTextColor,
         ),
       ),
     );
@@ -548,8 +549,8 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: 20.h),
-              
+              // SizedBox(height: 20.h),
+
               // Market and Limit buttons
               Row(
                 children: [
@@ -618,9 +619,9 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
                   ),
                 ],
               ),
-              
+
               SizedBox(height: 24.h),
-              
+
               // Only show the rest of the form if Market is selected
               if (selectedOrderType == "Market") ...[
                 CustomText(
@@ -728,9 +729,9 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
                     value: slValue,
                     onIncrement: () => updateSL(1),
                     onDecrement: () => updateSL(-1),
-                  canIncrement: !skipSL && canIncreaseSL,
-                  canDecrement: !skipSL && canDecreaseSL,
-                  enabled: hasPrice && !skipSL,
+                    canIncrement: !skipSL && canIncreaseSL,
+                    canDecrement: !skipSL && canDecreaseSL,
+                    enabled: hasPrice && !skipSL,
                     valueColor: colorConstants.redColor,
                     helperText: helperText,
                     controller: slTextController,
@@ -738,30 +739,30 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
                     onEditingComplete: _commitSLInput,
                   );
                 }),
-              SizedBox(height: 2.h),
-              Row(
-                children: [
-                  Checkbox(
-                    value: skipSL,
-                    activeColor: colorConstants.redColor,
-                    onChanged: (val) {
-                      setState(() {
-                        skipSL = val ?? false;
-                        if (skipSL) {
-                          slValue = 0.0;
-                          slTextController.text = "";
-                        }
-                      });
-                    },
-                  ),
-                  CustomText(
-                    "Skip SL",
-                    size: 14.sp,
-                    color: colorConstants.blackColor,
-                  ),
-                ],
-              ),
-              SizedBox(height: 16.h),
+                SizedBox(height: 2.h),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: skipSL,
+                      activeColor: colorConstants.redColor,
+                      onChanged: (val) {
+                        setState(() {
+                          skipSL = val ?? false;
+                          if (skipSL) {
+                            slValue = 0.0;
+                            slTextController.text = "";
+                          }
+                        });
+                      },
+                    ),
+                    CustomText(
+                      "Skip SL",
+                      size: 14.sp,
+                      color: colorConstants.blackColor,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
                 Obx(() {
                   final ep = entryPrice;
                   final helperText = selectedTradeType == TradeSide.buy
@@ -772,9 +773,9 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
                     value: tpValue,
                     onIncrement: () => updateTP(1),
                     onDecrement: () => updateTP(-1),
-                  canIncrement: !skipTP && canIncreaseTP,
-                  canDecrement: !skipTP && canDecreaseTP,
-                  enabled: hasPrice && !skipTP,
+                    canIncrement: !skipTP && canIncreaseTP,
+                    canDecrement: !skipTP && canDecreaseTP,
+                    enabled: hasPrice && !skipTP,
                     valueColor: colorConstants.greenColor,
                     helperText: helperText,
                     controller: tpTextController,
@@ -782,30 +783,30 @@ class _SLTPOrderScreenState extends State<SLTPOrderScreen> {
                     onEditingComplete: _commitTPInput,
                   );
                 }),
-              SizedBox(height: 2.h),
-              Row(
-                children: [
-                  Checkbox(
-                    value: skipTP,
-                    activeColor: colorConstants.redColor,
-                    onChanged: (val) {
-                      setState(() {
-                        skipTP = val ?? false;
-                        if (skipTP) {
-                          tpValue = 0.0;
-                          tpTextController.text = "";
-                        }
-                      });
-                    },
-                  ),
-                  CustomText(
-                    "Skip TP",
-                    size: 14.sp,
-                    color: colorConstants.blackColor,
-                  ),
-                ],
-              ),
-              SizedBox(height: 16.h),
+                SizedBox(height: 2.h),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: skipTP,
+                      activeColor: colorConstants.redColor,
+                      onChanged: (val) {
+                        setState(() {
+                          skipTP = val ?? false;
+                          if (skipTP) {
+                            tpValue = 0.0;
+                            tpTextController.text = "";
+                          }
+                        });
+                      },
+                    ),
+                    CustomText(
+                      "Skip TP",
+                      size: 14.sp,
+                      color: colorConstants.blackColor,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
                 SizedBox(height: 24.h),
                 if (validationError != null)
                   Container(

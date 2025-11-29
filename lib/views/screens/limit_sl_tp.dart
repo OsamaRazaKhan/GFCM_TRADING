@@ -34,7 +34,7 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
 
   String? validationError;
   bool isSubmitting = false;
-  
+
   // New state variable for order type
   String selectedOrderType = "Limit"; // "Market" or "Limit"
 
@@ -45,7 +45,7 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
     lotTextController.text = lotSize.toStringAsFixed(2);
     slTextController.text = "";
     tpTextController.text = "";
-    
+
     // Initialize entry price with live price
     final initialPrice = _getLivePrice();
     if (initialPrice > 0) {
@@ -104,7 +104,8 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
   }
 
   void _syncEntryPriceController() {
-    entryPriceController.text = customEntryPrice > 0 ? customEntryPrice.toStringAsFixed(2) : "";
+    entryPriceController.text =
+        customEntryPrice > 0 ? customEntryPrice.toStringAsFixed(2) : "";
     entryPriceController.selection = TextSelection.fromPosition(
       TextPosition(offset: entryPriceController.text.length),
     );
@@ -324,7 +325,7 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
     if (!_validateInputs()) return;
 
     final ep = entryPrice;
-    
+
     setState(() {
       isSubmitting = true;
     });
@@ -577,8 +578,9 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
         child: Icon(
           icon,
           size: 20.sp,
-          color:
-              enabled ? colorConstants.secondaryColor : colorConstants.hintTextColor,
+          color: enabled
+              ? colorConstants.secondaryColor
+              : colorConstants.hintTextColor,
         ),
       ),
     );
@@ -611,78 +613,78 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(height: 20.h),
-              
+
               // Market and Limit buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (selectedOrderType != "Market") {
-                          Get.off(() => const SLTPOrderScreen());
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedOrderType == "Market"
-                            ? colorConstants.secondaryColor
-                            : colorConstants.fieldColor,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          side: BorderSide(
-                            color: selectedOrderType == "Market"
-                                ? colorConstants.secondaryColor
-                                : colorConstants.fieldBorderColor,
-                          ),
-                        ),
-                      ),
-                      child: CustomText(
-                        "Market",
-                        size: 16.sp,
-                        fw: FontWeight.w600,
-                        color: selectedOrderType == "Market"
-                            ? colorConstants.whiteColor
-                            : colorConstants.blackColor,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedOrderType = "Limit";
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedOrderType == "Limit"
-                            ? colorConstants.secondaryColor
-                            : colorConstants.fieldColor,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.r),
-                          side: BorderSide(
-                            color: selectedOrderType == "Limit"
-                                ? colorConstants.secondaryColor
-                                : colorConstants.fieldBorderColor,
-                          ),
-                        ),
-                      ),
-                      child: CustomText(
-                        "Limit",
-                        size: 16.sp,
-                        fw: FontWeight.w600,
-                        color: selectedOrderType == "Limit"
-                            ? colorConstants.whiteColor
-                            : colorConstants.blackColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              SizedBox(height: 24.h),
-              
+              // Row(
+              //   children: [
+              //     Expanded(
+              //       child: ElevatedButton(
+              //         onPressed: () {
+              //           if (selectedOrderType != "Market") {
+              //             Get.off(() => const SLTPOrderScreen());
+              //           }
+              //         },
+              //         style: ElevatedButton.styleFrom(
+              //           backgroundColor: selectedOrderType == "Market"
+              //               ? colorConstants.secondaryColor
+              //               : colorConstants.fieldColor,
+              //           padding: EdgeInsets.symmetric(vertical: 14.h),
+              //           shape: RoundedRectangleBorder(
+              //             borderRadius: BorderRadius.circular(8.r),
+              //             side: BorderSide(
+              //               color: selectedOrderType == "Market"
+              //                   ? colorConstants.secondaryColor
+              //                   : colorConstants.fieldBorderColor,
+              //             ),
+              //           ),
+              //         ),
+              //         child: CustomText(
+              //           "Market",
+              //           size: 16.sp,
+              //           fw: FontWeight.w600,
+              //           color: selectedOrderType == "Market"
+              //               ? colorConstants.whiteColor
+              //               : colorConstants.blackColor,
+              //         ),
+              //       ),
+              //     ),
+              //     SizedBox(width: 12.w),
+              //     Expanded(
+              //       child: ElevatedButton(
+              //         onPressed: () {
+              //           setState(() {
+              //             selectedOrderType = "Limit";
+              //           });
+              //         },
+              //         style: ElevatedButton.styleFrom(
+              //           backgroundColor: selectedOrderType == "Limit"
+              //               ? colorConstants.secondaryColor
+              //               : colorConstants.fieldColor,
+              //           padding: EdgeInsets.symmetric(vertical: 14.h),
+              //           shape: RoundedRectangleBorder(
+              //             borderRadius: BorderRadius.circular(8.r),
+              //             side: BorderSide(
+              //               color: selectedOrderType == "Limit"
+              //                   ? colorConstants.secondaryColor
+              //                   : colorConstants.fieldBorderColor,
+              //             ),
+              //           ),
+              //         ),
+              //         child: CustomText(
+              //           "Limit",
+              //           size: 16.sp,
+              //           fw: FontWeight.w600,
+              //           color: selectedOrderType == "Limit"
+              //               ? colorConstants.whiteColor
+              //               : colorConstants.blackColor,
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
+
+              // SizedBox(height: 24.h),
+
               // Only show the rest of the form if Limit is selected
               if (selectedOrderType == "Limit") ...[
                 CustomText(
@@ -728,12 +730,13 @@ class _SLTPOrderScreenState extends State<LimitSlTp> {
                           slValue = 0.0;
                           tpValue = 0.0;
                           validationError = null;
-                          
+
                           // Update entry price when trade type changes
                           final livePrice = _getLivePrice();
                           if (livePrice > 0) {
                             customEntryPrice = livePrice;
-                            entryPriceController.text = livePrice.toStringAsFixed(2);
+                            entryPriceController.text =
+                                livePrice.toStringAsFixed(2);
                           }
                         });
                         _syncSLController();

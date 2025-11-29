@@ -147,7 +147,7 @@ class _SignalsState extends State<Signals> {
                                   false;
                           final status = signal.status?.toLowerCase() ?? '';
 
-                          return signal.status == "Expired"
+                          return signal.status == "Expired" || isExpired
                               ? Container()
                               : Container(
                                   margin: EdgeInsets.only(bottom: 14.h),

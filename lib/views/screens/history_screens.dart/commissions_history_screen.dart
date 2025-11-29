@@ -205,62 +205,62 @@ class _CommissionsHistoryScreenState extends State<CommissionsHistoryScreen> {
                                           fw: FontWeight.w400,
                                           color: colorConstants.blackColor,
                                         ),
-                                        SizedBox(height: 10.h),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            GetBuilder<NavController>(
-                                              id: 'commission_$index', // unique ID per item
-                                              builder: (controller) {
-                                                return CustomButton(
-                                                  verticalPadding: controller
-                                                                  .isSubmitMap[
-                                                              'commission_$index'] ==
-                                                          true
-                                                      ? 2.h
-                                                      : 0,
-                                                  horizontalPadding: controller
-                                                                  .isSubmitMap[
-                                                              'commission_$index'] ==
-                                                          true
-                                                      ? 25.w
-                                                      : 0,
-                                                  height: 30.h,
-                                                  width: 80.w,
-                                                  bordercircular: 5.r,
-                                                  borderColor:
-                                                      Colors.transparent,
-                                                  borderWidth: 2.sp,
-                                                  text: "Submit",
-                                                  textColor: colorConstants
-                                                      .primaryColor,
-                                                  fontSize: 11.sp,
-                                                  fw: FontWeight.w500,
-                                                  boxColor: colorConstants
-                                                      .secondaryColor,
-                                                  onTap: () {
-                                                    controller.isSubmitMap[
-                                                                'commission_$index'] ==
-                                                            true
-                                                        ? null
-                                                        : navController
-                                                            .updateReferralBalance(
-                                                            commission.amount ??
-                                                                "0",
-                                                            'commission_$index',
-                                                            commission.id ?? 0,
-                                                          );
-                                                  },
-                                                  loader: controller
-                                                              .isSubmitMap[
-                                                          'commission_$index'] ==
-                                                      true,
-                                                );
-                                              },
-                                            ),
-                                          ],
-                                        ),
+                                        SizedBox(height: 7.h),
+                                        // Row(
+                                        //   mainAxisAlignment:
+                                        //       MainAxisAlignment.end,
+                                        //   children: [
+                                        //     GetBuilder<NavController>(
+                                        //       id: 'commission_$index', // unique ID per item
+                                        //       builder: (controller) {
+                                        //         return CustomButton(
+                                        //           verticalPadding: controller
+                                        //                           .isSubmitMap[
+                                        //                       'commission_$index'] ==
+                                        //                   true
+                                        //               ? 2.h
+                                        //               : 0,
+                                        //           horizontalPadding: controller
+                                        //                           .isSubmitMap[
+                                        //                       'commission_$index'] ==
+                                        //                   true
+                                        //               ? 25.w
+                                        //               : 0,
+                                        //           height: 30.h,
+                                        //           width: 80.w,
+                                        //           bordercircular: 5.r,
+                                        //           borderColor:
+                                        //               Colors.transparent,
+                                        //           borderWidth: 2.sp,
+                                        //           text: "Submit",
+                                        //           textColor: colorConstants
+                                        //               .primaryColor,
+                                        //           fontSize: 11.sp,
+                                        //           fw: FontWeight.w500,
+                                        //           boxColor: colorConstants
+                                        //               .secondaryColor,
+                                        //           onTap: () {
+                                        //             controller.isSubmitMap[
+                                        //                         'commission_$index'] ==
+                                        //                     true
+                                        //                 ? null
+                                        //                 : navController
+                                        //                     .updateReferralBalance(
+                                        //                     commission.amount ??
+                                        //                         "0",
+                                        //                     'commission_$index',
+                                        //                     commission.id ?? 0,
+                                        //                   );
+                                        //           },
+                                        //           loader: controller
+                                        //                       .isSubmitMap[
+                                        //                   'commission_$index'] ==
+                                        //               true,
+                                        //         );
+                                        //       },
+                                        //     ),
+                                        //   ],
+                                        // ),
                                       ],
                                     ),
                                   ),
