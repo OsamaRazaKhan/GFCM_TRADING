@@ -48,10 +48,9 @@ class _bottomNavScreenState extends State<bottomNavScreen> {
                   navController.selectIndex(index);
                 }
               },
-              backgroundColor:
-                  Theme.of(context).brightness == Brightness.dark
-                      ? colorConstants.bottomDarkGrayCol
-                      : colorConstants.bottomDarkGrayCol,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? colorConstants.bottomDarkGrayCol
+                  : colorConstants.bottomDarkGrayCol,
               // Background color
               type: BottomNavigationBarType.fixed,
               selectedLabelStyle: TextStyle(color: colorConstants.primaryColor),

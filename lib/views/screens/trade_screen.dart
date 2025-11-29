@@ -674,11 +674,19 @@ class _TradeScreenState extends State<TradeScreen> with RouteAware {
       ),
       title: Row(
         children: [
-          CustomText(
-            "${order.side == TradeSide.buy ? 'BUY' : 'SELL'} ${order.lots.toStringAsFixed(2)} @ ${order.entryPrice.toStringAsFixed(2)}",
-            size: 16.sp,
-            fw: FontWeight.w600,
+          Flexible(
+            child: CustomText(
+              "${order.side == TradeSide.buy ? 'BUY' : 'SELL'} ${order.lots.toStringAsFixed(2)} @ ${order.entryPrice.toStringAsFixed(2)}",
+              size: 14.sp,
+              textOverflow: TextOverflow.ellipsis,
+              fw: FontWeight.w600,
+            ),
           ),
+          // CustomText(
+          //     "${order.side == TradeSide.buy ? 'BUY' : 'SELL'} ${order.lots.toStringAsFixed(2)} @ ${order.entryPrice.toStringAsFixed(2)}",
+          //     size: 14.sp,
+          //     fw: FontWeight.w600,
+          //   ),
           SizedBox(width: 8.w),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
