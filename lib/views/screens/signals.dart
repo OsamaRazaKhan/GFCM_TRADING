@@ -243,33 +243,38 @@ class _SignalsState extends State<Signals> {
                                                       .spaceBetween,
                                               children: [
                                                 // Countdown timer
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.timer,
-                                                      color: isExpired
-                                                          ? colorConstants
-                                                              .redColor
-                                                          : colorConstants
-                                                              .secondaryColor,
-                                                      size: 16.sp,
-                                                    ),
-                                                    SizedBox(width: 4.w),
-                                                    CustomText(
-                                                      isExpired
-                                                          ? "Expired"
-                                                          : _formatCountdown(
-                                                              remainingSeconds),
-                                                      size: 12.sp,
-                                                      fw: FontWeight.w600,
-                                                      color: isExpired
-                                                          ? colorConstants
-                                                              .redColor
-                                                          : colorConstants
-                                                              .secondaryColor,
-                                                    ),
-                                                  ],
-                                                ),
+                                                if (signal.status !=
+                                                        "Accepted" &&
+                                                    signal.status != "Rejected")
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.timer,
+                                                        color: isExpired
+                                                            ? colorConstants
+                                                                .redColor
+                                                            : colorConstants
+                                                                .secondaryColor,
+                                                        size: 16.sp,
+                                                      ),
+                                                      SizedBox(width: 4.w),
+                                                      CustomText(
+                                                        isExpired
+                                                            ? "Expired"
+                                                            : _formatCountdown(
+                                                                remainingSeconds),
+                                                        size: 12.sp,
+                                                        fw: FontWeight.w600,
+                                                        color: isExpired
+                                                            ? colorConstants
+                                                                .redColor
+                                                            : colorConstants
+                                                                .secondaryColor,
+                                                      ),
+                                                    ],
+                                                  )
+                                                else
+                                                  Container(),
 
                                                 // Status badge (if responded)
                                                 if (status == 'accepted' ||

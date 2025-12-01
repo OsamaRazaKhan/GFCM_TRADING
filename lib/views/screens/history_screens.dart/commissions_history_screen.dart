@@ -198,14 +198,14 @@ class _CommissionsHistoryScreenState extends State<CommissionsHistoryScreen> {
                                     visible: commission.current == "true",
                                     child: Column(
                                       children: [
-                                        SizedBox(height: 10.h),
-                                        CustomText(
-                                          "Your referral has utilized 60% of their allotted lots. Please click Submit to apply your commission.",
-                                          size: 12.sp,
-                                          fw: FontWeight.w400,
-                                          color: colorConstants.blackColor,
-                                        ),
-                                        SizedBox(height: 7.h),
+                                        // SizedBox(height: 10.h),
+                                        // CustomText(
+                                        //   "Your referral has utilized 60% of their allotted lots. Please click Submit to apply your commission.",
+                                        //   size: 12.sp,
+                                        //   fw: FontWeight.w400,
+                                        //   color: colorConstants.blackColor,
+                                        // ),
+                                        // SizedBox(height: 7.h),
                                         // Row(
                                         //   mainAxisAlignment:
                                         //       MainAxisAlignment.end,

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:gfcm_trading/constants/color_constants.dart';
 import 'package:gfcm_trading/controllers/nav_controller.dart';
 import 'package:gfcm_trading/controllers/settings_controller.dart';
+import 'package:gfcm_trading/global.dart';
 import 'package:gfcm_trading/models/close_trades_model.dart';
 import 'package:gfcm_trading/models/position_model.dart';
 import 'package:gfcm_trading/models/pending_order_model.dart';
@@ -56,6 +57,7 @@ class TradeChartController extends GetxController {
   final ColorConstants colorConstants = ColorConstants();
   Map<String, dynamic>? userData;
 
+  double balanceToUpdate = 0.0;
   // ===== Account settings =====
   RxDouble balance = 0.0.obs;
 
@@ -1366,6 +1368,7 @@ class TradeChartController extends GetxController {
 
     final jsonTrades = jsonEncode(trades);
     await webViewController.runJavaScript('updateTradeLines($jsonTrades)');
+    print(balance.value);
   }
 
   /*-------------------------------------------------------------*/
@@ -1402,6 +1405,7 @@ class TradeChartController extends GetxController {
         }
       }
     }
+    print(balance.value);
   }
   /*-------------------------------------------------------------*/
   /*                     close single trade                      */
@@ -1534,7 +1538,7 @@ class TradeChartController extends GetxController {
 
       // Calculate and update balance
       await creditCalculations(realized);
-      print(balance.value);
+      balanceToUpdate = balance.value;
       // Remove all positions immediately - prevent reappearing/blinking
       positions.clear();
       // Also remove from confirmedTrades if present
@@ -1550,12 +1554,10 @@ class TradeChartController extends GetxController {
       if (equity.value < 0 || balance.value < 0) {
         balance.value = 0.0;
       }
-
       FlushMessages.commonToast(
         "Closed ALL positions | P/L ${realized.toStringAsFixed(2)}",
         backGroundColor: colorConstants.secondaryColor,
       );
-
       // Temporarily stop polling to prevent re-adding closed trades
       _stopPositionsPolling();
       print(balance.value);
@@ -1565,7 +1567,9 @@ class TradeChartController extends GetxController {
       // Refresh history screen after saving
       try {
         final navController = Get.find<NavController>();
+        print(balance.value);
         await navController.getYourTradsHistory();
+        print(balance.value);
       } catch (e) {
         debugPrint("Error refreshing history: $e");
       }
@@ -1847,6 +1851,7 @@ class TradeChartController extends GetxController {
   bool _isRecalcInProgress = false;
 
   Future<void> _recalcUsedMargin() async {
+    print(balance.value);
     if (_isRecalcInProgress) return;
     _isRecalcInProgress = true;
 
@@ -1889,6 +1894,7 @@ class TradeChartController extends GetxController {
       }
 
       await _recalcAccount();
+      print(balance.value);
     } finally {
       //  Always reset the flag, no matter what
       _isRecalcInProgress = false;
@@ -1931,6 +1937,7 @@ class TradeChartController extends GetxController {
       update();
       await saveLiquitedTradeHistory();
     }
+    print(balance.value);
   }
 
   bool _isTickerReconnecting = false;
@@ -2916,13 +2923,14 @@ class TradeChartController extends GetxController {
   /*-----------------------------------------------*/
   Future<void> refreshAllTradeData() async {
     try {
+      print(balance.value);
       // Use force flag to bypass concurrent checks for manual refresh
       // Refresh only active trades and balance (no history/closed trades)
       await Future.wait([
         getYourTradePositions(force: true), // Force fetch active trades only
         getYourBalance(),
       ]);
-
+      print(balance.value);
       // Recalculate account metrics (balance/equity/margin)
       await _recalcUsedMargin();
       _recalcAccount();
@@ -2939,11 +2947,12 @@ class TradeChartController extends GetxController {
       update();
       print(balance.value);
       final response = await TradingServices.updateBalance(
-        balance.value,
+        balanceToUpdate == 0.0 ? balance.value : balanceToUpdate,
         marginUsed.value,
         selectedMode.value,
         credit.value,
       );
+      balanceToUpdate = 0.0;
       if (response != null && response.statusCode == 200) {}
     } catch (e) {}
   }

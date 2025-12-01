@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:gfcm_trading/constants/app_url_constants.dart';
+import 'package:gfcm_trading/global.dart';
 import 'package:gfcm_trading/models/close_trades_model.dart';
 import 'package:gfcm_trading/models/position_model.dart';
 import 'package:http/http.dart' as http;
@@ -206,6 +207,7 @@ class TradingServices {
             'marginused': marginUsed,
           }),
         );
+        print(response);
       } else {
         final uri = Uri.parse(AppUrlConstants.updateDemoMarginUsed);
 
@@ -718,6 +720,7 @@ class TradingServices {
         uri,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
+          "id": signalId,
           "userid": userId,
           "status": status,
         }),
