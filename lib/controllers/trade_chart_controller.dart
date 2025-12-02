@@ -2519,26 +2519,52 @@ class TradeChartController extends GetxController {
         // CRITICAL: Never remove pending orders that are still waiting
         // Only remove if they're executed or explicitly deleted from backend
         // Keep local orders that were just created (not yet synced to API) for 120 seconds
+
+        // pendingOrders.removeWhere((o) {
+        //   // CRITICAL: Never remove if currently executing
+        //   if (_executingOrderIds.contains(o.orderId)) {
+        //     return false;
+        //   }
+
+        //   // Keep if: order exists in API, order was created recently (within last 120 seconds), or order is not executed
+        //   final isRecent =
+        //       DateTime.now().difference(o.createdAt).inSeconds < 120;
+        //   // Only remove if order is NOT in API AND NOT recent AND NOT executed AND NOT executing
+        //   // This ensures waiting orders NEVER disappear unless executed or manually closed
+        //   final shouldRemove = !apiPendingOrderIds.contains(o.orderId) &&
+        //       !isRecent &&
+        //       !o.isExecuted;
+        //   if (shouldRemove) {
+        //     debugPrint(
+        //         "Removing pending order ${o.orderId} - not in API, not recent, not executed");
+        //     _pendingOrderReferencePrices.remove(o.orderId);
+        //   }
+        //   return shouldRemove;
+        // });
         pendingOrders.removeWhere((o) {
-          // CRITICAL: Never remove if currently executing
+          // Never remove if executing
           if (_executingOrderIds.contains(o.orderId)) {
             return false;
           }
 
-          // Keep if: order exists in API, order was created recently (within last 120 seconds), or order is not executed
           final isRecent =
               DateTime.now().difference(o.createdAt).inSeconds < 120;
-          // Only remove if order is NOT in API AND NOT recent AND NOT executed AND NOT executing
-          // This ensures waiting orders NEVER disappear unless executed or manually closed
-          final shouldRemove = !apiPendingOrderIds.contains(o.orderId) &&
-              !isRecent &&
-              !o.isExecuted;
-          if (shouldRemove) {
+
+          // NEW LOGIC: Only remove if API reports it as executed
+          final startedExecuting = executedFromApiIds.contains(o.orderId);
+
+          if (startedExecuting) {
             debugPrint(
-                "Removing pending order ${o.orderId} - not in API, not recent, not executed");
+                "Removing pending order ${o.orderId} - API shows it as executed");
             _pendingOrderReferencePrices.remove(o.orderId);
+            return true;
           }
-          return shouldRemove;
+
+          // Keep it if:
+          // - recent OR
+          // - not executed OR
+          // - still waiting but API didn’t send it
+          return false;
         });
 
         // Add new pending orders from API that we don't have locally
