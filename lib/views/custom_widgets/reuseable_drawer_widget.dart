@@ -18,6 +18,7 @@ import 'package:gfcm_trading/views/screens/kyc_screens/kyc_main_screen.dart';
 import 'package:gfcm_trading/views/screens/settings_screen.dart';
 import 'package:gfcm_trading/views/screens/signals.dart';
 import 'package:gfcm_trading/views/screens/social_screen.dart';
+import 'package:gfcm_trading/views/screens/termsAndConditions_screen.dart';
 import 'package:gfcm_trading/views/screens/transections_screen.dart/transection_screen.dart';
 import 'package:gfcm_trading/views/screens/update_profile_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -243,6 +244,26 @@ class ReuseableDrawerWidget extends StatelessWidget {
                   ),
                 ),
                 titleText: "About",
+                titleTextColor: colorConstants.blackColor,
+                titleTextFw: FontWeight.w700,
+                titleTextSize: 14.sp,
+              ),
+              ReuseableListTile(
+                onTap: () {
+                  Get.to(() => TermsAndConditionsScreen());
+                },
+                icon: Transform.scale(
+                  scale: 0.7,
+                  child: Helper.svgIcon(
+                    IconConstants.aboutSvg,
+                    isSelected: false,
+                    isOriginalColor: true,
+                    originalColor: colorConstants.blackColor,
+                    height: 30,
+                    width: 30,
+                  ),
+                ),
+                titleText: "Terms and Conditions",
                 titleTextColor: colorConstants.blackColor,
                 titleTextFw: FontWeight.w700,
                 titleTextSize: 14.sp,

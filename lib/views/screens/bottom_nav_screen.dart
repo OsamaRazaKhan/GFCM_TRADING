@@ -16,6 +16,7 @@ class bottomNavScreen extends StatefulWidget {
 class _bottomNavScreenState extends State<bottomNavScreen> {
   ColorConstants colorConstants = ColorConstants();
   NavController navController = Get.put(NavController());
+
   @override
   void initState() {
     // TODO: implement initState

@@ -25,7 +25,7 @@ class TradeScreen extends StatefulWidget {
 class _TradeScreenState extends State<TradeScreen> with RouteAware {
   ColorConstants colorConstants = ColorConstants();
   TradeChartController tradeChartController = Get.find<TradeChartController>();
-
+  int itemCount = 0;
   String fmt(num v) => v.isNaN ? '--' : v.toStringAsFixed(2);
 
   @override
@@ -567,8 +567,12 @@ class _TradeScreenState extends State<TradeScreen> with RouteAware {
                         child: Obx(() {
                           final c = tradeChartController;
                           final allItems = c.allTradeItems;
-
-                          return allItems.isEmpty
+                          bool shouldRefresh = false;
+                          if (allItems.length < itemCount || allItems.isEmpty) {
+                            shouldRefresh = true;
+                          }
+                          itemCount = allItems.length;
+                          return shouldRefresh
                               ? FutureBuilder(
                                   future: c
                                       .refreshAllTradeData(), // ALWAYS refresh once
