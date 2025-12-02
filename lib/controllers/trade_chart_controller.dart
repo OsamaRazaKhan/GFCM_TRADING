@@ -541,7 +541,7 @@ class TradeChartController extends GetxController {
 
       HapticFeedback.heavyImpact();
       positions.add(pos);
-      await refreshChartTradeLines();
+      // await refreshChartTradeLines();
       await _recalcUsedMargin();
       _recalcAccount();
 
@@ -1328,11 +1328,11 @@ class TradeChartController extends GetxController {
       // Immediately update account metrics
       await _recalcUsedMargin();
       _recalcAccount();
-
       FlushMessages.commonToast(
         "Opened ${side == TradeSide.buy ? 'BUY' : 'SELL'} ${lotSize.toStringAsFixed(2)} @ ${entry.toStringAsFixed(2)}",
         backGroundColor: colorConstants.secondaryColor,
       );
+      shouldAddPendingOrders = false;
       // Schedule server sync after last click
       _scheduleServerSync();
       // Debounced refresh after opening to sync with backend (prevents flickering)
@@ -1343,7 +1343,7 @@ class TradeChartController extends GetxController {
     });
   }
 
-  void _scheduleServerSync() {
+  void _scheduleServerSync({bool shouldAddPendingOrders = true}) {
     _syncTimer?.cancel(); // cancel previous timer if still counting
     _syncTimer = Timer(const Duration(seconds: 3), () async {
       try {

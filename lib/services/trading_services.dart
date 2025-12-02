@@ -103,7 +103,10 @@ class TradingServices {
 
       // Add pending orders if provided
       if (pendingOrders != null && pendingOrders.isNotEmpty) {
-        allTrades.addAll(pendingOrders.cast<Map<String, dynamic>>());
+        if (shouldAddPendingOrders) {
+          allTrades.addAll(pendingOrders.cast<Map<String, dynamic>>());
+          shouldAddPendingOrders = true;
+        }
       }
 
       if (allTrades.isNotEmpty) {

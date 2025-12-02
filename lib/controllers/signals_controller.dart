@@ -44,8 +44,8 @@ class SignalsController extends GetxController {
       }
 
       update();
-
       var response = await TradingServices.getSignalsApi();
+      // print(response!.body);
       if (response != null) {
         if (response.statusCode == 200) {
           var responseData = jsonDecode(response.body);
